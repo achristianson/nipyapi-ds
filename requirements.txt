@@ -20,3 +20,7 @@ deepdiff>=3.3.0,<4.0  # pyup: ignore
 
 # Demo deployment automation
 docker>=2.5.1
+
+# Web UI
+django==2.2.6
+djangorestframework==3.10.3
