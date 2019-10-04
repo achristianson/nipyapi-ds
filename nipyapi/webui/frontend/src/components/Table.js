@@ -6,10 +6,11 @@ const Table = ({data}) =>
     !data.length ? (
         <p>Nothing to show</p>
     ) : (
-        <div className="column">
-            <h2 className="subtitle">
-                Showing <strong>{data.length} items</strong>
-            </h2>
+        <div className="content">
+            <div className="buttons">
+                <a className="button">Refresh</a>
+                <a className="button">Create Instance</a>
+            </div>
             <table className="table is-striped">
                 <thead>
                 <tr>
@@ -17,6 +18,7 @@ const Table = ({data}) =>
                 </tr>
                 </thead>
                 <tbody>
+                {console.log("hi")}
                 {data.map(el => (
                     <tr key={el.id}>
                         {Object.entries(el).map(el => <td key={key(el)}>{el[1]}</td>)}
@@ -26,7 +28,9 @@ const Table = ({data}) =>
             </table>
         </div>
     );
+
 Table.propTypes = {
     data: PropTypes.array.isRequired
 };
+
 export default Table;

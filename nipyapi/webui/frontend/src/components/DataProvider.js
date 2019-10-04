@@ -6,6 +6,7 @@ class DataProvider extends Component {
         endpoint: PropTypes.string.isRequired,
         render: PropTypes.func.isRequired
     };
+
     state = {
         data: [],
         loaded: false,
