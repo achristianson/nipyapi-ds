@@ -1,10 +1,197 @@
-import React from "react";
+import React, {Component} from "react";
 import ReactDOM from "react-dom";
 import DataProvider from "./DataProvider";
 import Table from "./Table";
+import {BrowserRouter as Router, Route, Link, Redirect} from "react-router-dom";
+import PropTypes from "prop-types";
+
+const Breadcrumb = props => (
+    <nav className="breadcrumb" aria-label="breadcrumbs">
+        <ul>
+            {props.children}
+        </ul>
+    </nav>
+);
+
+const CurrentCrumb = props => (
+    <li className="is-active"><a href="#" aria-current="page">{props.children}</a></li>
+);
+
+const AdminCrumb = () => (
+    <li><Link to="/">Admin</Link></li>
+);
+
+const NifiInstancesCrumb = () => (
+    <React.Fragment>
+        <AdminCrumb/>
+        <li><Link to="/">NiFi Instances</Link></li>
+    </React.Fragment>
+);
+
+class NifiInstanceNew extends Component {
+    state = {
+        name: "",
+    };
+
+    handleSubmit = e => {
+        e.preventDefault();
+        console.log("SUBMIT");
+    };
+
+    handleChange = e => {
+        this.setState({[e.target.name]: e.target.value});
+    };
+
+    render() {
+        return (
+            <React.Fragment>
+                <Breadcrumb>
+                    <NifiInstancesCrumb/>
+                    <CurrentCrumb>New Instance</CurrentCrumb>
+                </Breadcrumb>
+                <div className="column">
+                    <form onSubmit={this.handleSubmit}>
+                        <div className="field">
+                            <label className="label">Name</label>
+                            <div className="control">
+                                <input
+                                    className="input"
+                                    type="text"
+                                    name="name"
+                                    onChange={this.handleChange}
+                                    value={name}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="control">
+                            <button type="submit" className="button is-info">
+                                Create Instance
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </React.Fragment>
+        );
+    }
+}
+
+class NifiInstanceDetail extends Component {
+    static propTypes = {
+        data: PropTypes.object.isRequired
+    };
+
+    state = {
+        destroyed: false
+    };
+
+    handleDestroy = () => {
+        console.log("Requesting destruction of nifi instance: " + this.props.data.id);
+        fetch("/api/nifi/" + this.props.data.id + "/", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                state: "PENDING_DESTROY"
+            })
+        }).then(response => {
+            if (response.status !== 200) {
+                console.log("Failed to request destruction of nifi instance: " + this.props.data.id)
+            } else {
+                console.log("Requested destruction of nifi instance: " + this.props.data.id)
+            }
+            return response.json();
+        });
+        this.setState({destroyed: true});
+    };
+
+    render() {
+        if (this.state.destroyed) {
+            return <Redirect to="/" push={true}/>;
+        }
+
+        return (
+            <React.Fragment>
+                <Breadcrumb>
+                    <NifiInstancesCrumb/>
+                    <CurrentCrumb>{this.props.data.name}</CurrentCrumb>
+                </Breadcrumb>
+                <section className="">
+                    <div className="content">
+                        {/*<DataProvider endpoint="api/nifi/"*/}
+                        {/*              render={data => <Table data={data.map(d => {*/}
+                        {/*                  return {*/}
+                        {/*                      id: d.id,*/}
+                        {/*                      "Instance": <Link to={"/nifi/" + d.id}>{d.name}</Link>*/}
+                        {/*                  }*/}
+                        {/*              })}/>}/>*/}
+                        <h3>{this.props.data.name}</h3>
+
+                        <div className="buttons">
+                            <a className="button" onClick={this.handleDestroy}>Destroy Instance</a>
+                            <a className="button">Save</a>
+                        </div>
+                    </div>
+                </section>
+            </React.Fragment>
+        );
+    }
+}
+
+const NifiInstance = ({match}) => (
+    <DataProvider endpoint={"/api/nifi/" + match.params.nifiInstanceId + "/"}
+                  render={data => <NifiInstanceDetail data={data}/>}/>
+);
+
+class NifiInstanceList extends Component {
+    state = {
+        adding: false
+    };
+
+    handleRefresh = () => {
+        this.refs.provider.refresh();
+    };
+
+    handleNew = () => {
+        this.setState({
+            adding: true
+        })
+    };
+
+    render() {
+        if (this.state.adding) {
+            return <Redirect to="/create_nifi" push={true}/>;
+        }
+
+        return (
+            <React.Fragment>
+                <Breadcrumb>
+                    <AdminCrumb/>
+                    <CurrentCrumb>NiFi Instances</CurrentCrumb>
+                </Breadcrumb>
+                <section className="">
+                    <div className="content">
+                        <DataProvider endpoint="/api/nifi/"
+                                      render={data => <Table data={data.map(d => {
+                                          return {
+                                              id: d.id,
+                                              "Instance": <Link to={"/nifi/" + d.id}>{d.name}</Link>,
+                                              "State": d.state
+                                          }
+                                      })}/>} ref="provider"/>
+                        <div className="buttons">
+                            <a className="button" onClick={this.handleRefresh}>Refresh</a>
+                            <a className="button" onClick={this.handleNew}>New Instance</a>
+                        </div>
+                    </div>
+                </section>
+            </React.Fragment>
+        );
+    }
+}
 
 const App = () => (
-
     <React.Fragment>
         <nav className="navbar is-white">
             <div className="container">
@@ -40,7 +227,7 @@ const App = () => (
                             General
                         </p>
                         <ul className="menu-list">
-                            <li><a className="is-active">Nifi Instances</a></li>
+                            <li><a className="is-active">NiFi Instances</a></li>
                             <li><a>Kubernetes</a></li>
                         </ul>
                         <p className="menu-label">
@@ -52,18 +239,9 @@ const App = () => (
                     </aside>
                 </div>
                 <div className="column is-9">
-                    <nav className="breadcrumb" aria-label="breadcrumbs">
-                        <ul>
-                            <li><a href="../">Admin</a></li>
-                            {/*<li><a href="../">Templates</a></li>*/}
-                            {/*<li><a href="../">Examples</a></li>*/}
-                            <li className="is-active"><a href="#" aria-current="page">NiFi Instances</a></li>
-                        </ul>
-                    </nav>
-                    <section className="">
-                        <DataProvider endpoint="api/nifi/"
-                                      render={data => <Table data={data}/>}/>
-                    </section>
+                    <Route exact path="/" component={NifiInstanceList}/>
+                    <Route path={`/create_nifi`} component={NifiInstanceNew}/>
+                    <Route path={`/nifi/:nifiInstanceId`} component={NifiInstance}/>
                 </div>
             </div>
         </div>
@@ -71,4 +249,9 @@ const App = () => (
     </React.Fragment>
 );
 const wrapper = document.getElementById("app");
-wrapper ? ReactDOM.render(<App/>, wrapper) : null;
+wrapper ? ReactDOM.render((
+    <Router>
+        <Route path="/" component={App}>
+        </Route>
+    </Router>
+), wrapper) : null;
