@@ -31,11 +31,21 @@ const NifiInstancesCrumb = () => (
 class NifiInstanceNew extends Component {
     state = {
         name: "",
+        creating: false,
+        submitted: false
     };
 
     handleSubmit = e => {
         e.preventDefault();
-        console.log("SUBMIT");
+        this.setState({creating: true});
+        const inst = {name: this.state.name};
+        const conf = {
+            method: "POST",
+            body: JSON.stringify(inst),
+            headers: new Headers({"Content-Type": "application/json"})
+        };
+        fetch("/api/nifi/", conf).then(response => this.setState({submitted: true}));
+
     };
 
     handleChange = e => {
@@ -43,6 +53,10 @@ class NifiInstanceNew extends Component {
     };
 
     render() {
+        if (this.state.submitted) {
+            return <Redirect to="/" push={true}/>;
+        }
+
         return (
             <React.Fragment>
                 <Breadcrumb>
@@ -59,15 +73,17 @@ class NifiInstanceNew extends Component {
                                     type="text"
                                     name="name"
                                     onChange={this.handleChange}
-                                    value={name}
+                                    value={this.state.name}
                                     required
                                 />
                             </div>
                         </div>
                         <div className="control">
-                            <button type="submit" className="button is-info">
-                                Create Instance
-                            </button>
+                            {this.state.creating ? <span>Creating...</span> : (
+                                <button type="submit" className="button is-info">
+                                    Create Instance
+                                </button>
+                            )}
                         </div>
                     </form>
                 </div>
