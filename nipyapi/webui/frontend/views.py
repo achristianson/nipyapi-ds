@@ -1,17 +1,12 @@
-from background_task import background
-from django.shortcuts import render
 import logging
+
+from django.shortcuts import render
+from nipyapi.webui.nifi import bg_tasks
 
 logger = logging.getLogger(__name__)
 
 
-@background(schedule=5)
-def notify_user(user_id):
-    logger.error('hello from background task')
-    print("HELLO")
-
-
 def index(request):
+    bg_tasks.perform_cloud_ops()
     logger.error('hello from index view')
-    notify_user(10)
     return render(request, 'frontend/index.html')

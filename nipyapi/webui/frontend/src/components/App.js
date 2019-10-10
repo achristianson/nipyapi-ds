@@ -4,6 +4,7 @@ import DataProvider from "./DataProvider";
 import Table from "./Table";
 import {BrowserRouter as Router, Route, Link, Redirect} from "react-router-dom";
 import PropTypes from "prop-types";
+import key from "weak-key";
 
 const Breadcrumb = props => (
     <nav className="breadcrumb" aria-label="breadcrumbs">
@@ -32,13 +33,17 @@ class NifiInstanceNew extends Component {
     state = {
         name: "",
         creating: false,
-        submitted: false
+        submitted: false,
+        cluster: 0
     };
 
     handleSubmit = e => {
         e.preventDefault();
         this.setState({creating: true});
-        const inst = {name: this.state.name};
+        const inst = {
+            name: this.state.name,
+            cluster: parseInt(this.state.cluster)
+        };
         const conf = {
             method: "POST",
             body: JSON.stringify(inst),
@@ -76,6 +81,20 @@ class NifiInstanceNew extends Component {
                                     value={this.state.name}
                                     required
                                 />
+                            </div>
+                        </div>
+                        <div className="field">
+                            <label className="label">K8s Cluster</label>
+                            <div className="control">
+                                <select name="cluster" value={this.state.cluster} onChange={this.handleChange}>
+                                    <option key=""/>
+                                    <DataProvider endpoint={"/api/k8s-cluster/"}
+                                                  placeholder={<React.Fragment/>}
+                                                  render={data => data.map(el => (
+                                                      <option key={el.id}
+                                                              value={el.id}>{el.name}</option>
+                                                  ))}/>
+                                </select>
                             </div>
                         </div>
                         <div className="control">
@@ -157,6 +176,7 @@ class NifiInstanceDetail extends Component {
 
 const NifiInstance = ({match}) => (
     <DataProvider endpoint={"/api/nifi/" + match.params.nifiInstanceId + "/"}
+                  placeholder={<p>Loading...</p>}
                   render={data => <NifiInstanceDetail data={data}/>}/>
 );
 
@@ -189,6 +209,7 @@ class NifiInstanceList extends Component {
                 <section className="">
                     <div className="content">
                         <DataProvider endpoint="/api/nifi/"
+                                      placeholder={<p>Loading...</p>}
                                       render={data => <Table data={data.map(d => {
                                           return {
                                               id: d.id,

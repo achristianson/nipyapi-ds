@@ -4,13 +4,13 @@ import PropTypes from "prop-types";
 class DataProvider extends Component {
     static propTypes = {
         endpoint: PropTypes.string.isRequired,
-        render: PropTypes.func.isRequired
+        render: PropTypes.func.isRequired,
+        placeholder: PropTypes.element.isRequired
     };
 
     state = {
         data: [],
-        loaded: false,
-        placeholder: "Loading..."
+        loaded: false
     };
 
     refresh() {
@@ -29,8 +29,8 @@ class DataProvider extends Component {
     }
 
     render() {
-        const {data, loaded, placeholder} = this.state;
-        return loaded ? this.props.render(data) : <p>{placeholder}</p>;
+        const {data, loaded} = this.state;
+        return loaded ? this.props.render(data) : <React.Fragment>{this.props.placeholder}</React.Fragment>;
     }
 }
 
