@@ -111,6 +111,9 @@ class NifiInstanceNew extends Component {
     }
 }
 
+const ClusterMini = props =>
+    <React.Fragment>{props.data.name}</React.Fragment>;
+
 class NifiInstanceDetail extends Component {
     static propTypes = {
         data: PropTypes.object.isRequired
@@ -154,14 +157,22 @@ class NifiInstanceDetail extends Component {
                 </Breadcrumb>
                 <section className="">
                     <div className="content">
-                        {/*<DataProvider endpoint="api/nifi/"*/}
-                        {/*              render={data => <Table data={data.map(d => {*/}
-                        {/*                  return {*/}
-                        {/*                      id: d.id,*/}
-                        {/*                      "Instance": <Link to={"/nifi/" + d.id}>{d.name}</Link>*/}
-                        {/*                  }*/}
-                        {/*              })}/>}/>*/}
                         <h3>{this.props.data.name}</h3>
+
+                        <table className="table is-fullwidth">
+                            <tbody>
+                            <tr>
+                                <td>State</td>
+                                <td>{this.props.data.state}</td>
+                            </tr>
+                            <tr>
+                                <td>Cluster</td>
+                                <td><DataProvider endpoint={"/api/k8s-cluster/" + this.props.data.cluster + "/"}
+                                                  placeholder={<React.Fragment>Loading...</React.Fragment>}
+                                                  render={data => <ClusterMini data={data}/>}/></td>
+                            </tr>
+                            </tbody>
+                        </table>
 
                         <div className="buttons">
                             <a className="button" onClick={this.handleDestroy}>Destroy Instance</a>

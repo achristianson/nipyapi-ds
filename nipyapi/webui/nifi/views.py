@@ -8,12 +8,18 @@ class NifiInstanceListCreate(generics.ListCreateAPIView):
     serializer_class = NifiInstanceSerializer
 
 
+class NifiInstanceDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = NifiInstanceSerializer
+    lookup_url_kwarg = 'nifi_instance_id'
+    queryset = NifiInstance.objects.all()
+
+
 class K8sClusterList(generics.ListAPIView):
     queryset = K8sCluster.objects.all()
     serializer_class = K8sClusterSerializer
 
 
-class NifiInstanceDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = NifiInstanceSerializer
-    lookup_url_kwarg = 'nifi_instance_id'
-    queryset = NifiInstance.objects.all()
+class K8sClusterDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = K8sClusterSerializer
+    lookup_url_kwarg = 'cluster_id'
+    queryset = K8sCluster.objects.all()
