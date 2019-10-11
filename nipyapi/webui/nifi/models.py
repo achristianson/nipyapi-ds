@@ -8,6 +8,7 @@ class K8sCluster(models.Model):
     location = models.CharField(max_length=255)
     node_count = models.IntegerField()
     endpoint = models.CharField(max_length=2000)
+    object = models.BinaryField(null=True)
 
 
 class NifiInstance(models.Model):
