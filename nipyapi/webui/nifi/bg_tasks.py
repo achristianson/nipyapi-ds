@@ -18,22 +18,13 @@ def scan_clusters(client, project_id):
         obj.status = c.status
         obj.location = c.location
         obj.node_count = c.current_node_count
+        obj.endpoint = c.endpoint
         obj.object = pickle.dumps(c)
         obj.save()
         if created:
             logger.info('Created cluster %s', obj.name)
         else:
             logger.info('Updated cluster %s', obj.name)
-        cluster_endpoint = c.endpoint
-        print("*** CLUSTER ENDPOINT ***")
-        print(cluster_endpoint)
-
-        cluster_master_auth = c.master_auth
-        print("*** CLUSTER MASTER USERNAME PWD ***")
-        print(c.master_auth)
-        cluster_username = cluster_master_auth.username
-        cluster_password = cluster_master_auth.password
-        print("USERNAME : %s - PASSWORD : %s" % (cluster_username, cluster_password))
 
 
 @background(schedule=0)
@@ -46,9 +37,8 @@ def perform_cloud_ops():
     scan_clusters(gcloud_client, project)
 
     c = K8sCluster.objects.get(id=1)
-    gc = pickle.loads(c.object)
     configuration = client.Configuration()
-    configuration.host = f"https://{gc.endpoint}:443"
+    configuration.host = f"https://{c.endpoint}:443"
     configuration.verify_ssl = False
     configuration.api_key = {"authorization": "Bearer " + credentials.token}
     client.Configuration.set_default(configuration)
