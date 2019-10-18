@@ -10,7 +10,7 @@ from kubernetes import client
 from kubernetes.client import V1ObjectMeta, V1beta1CustomResourceDefinition, V1beta1CustomResourceDefinitionSpec, \
     V1ClusterRole, V1PolicyRule, V1ClusterRoleBinding, V1Subject, V1RoleRef, V1ServiceSpec, \
     V1ServicePort, V1Service, V1Deployment, V1ServiceAccount, V1DeploymentSpec, V1LabelSelector, V1PodTemplateSpec, \
-    V1PodSpec, V1Container, V1ContainerPort
+    V1PodSpec, V1Container, V1ContainerPort, V1EnvVar
 from nifi_web.models import K8sCluster
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,29 @@ def scan_clusters(client, project_id):
 def perform_cloud_ops():
     # set GOOGLE_APPLICATION_CREDENTIALS env to credentials file
     # set GOOGLE_CLOUD_PROJECT env to project id
+
+    domain = os.getenv('DOMAIN')
+    assert domain
+    logger.info(f'using domain: {domain}')
+    static_ip = os.getenv('STATIC_IP')
+    assert static_ip
+    logger.info(f'using static IP: {static_ip}')
+    admin_email = os.getenv('ADMIN_EMAIL')
+    assert admin_email
+    logger.info(f'using ACME admin email: {admin_email}')
+    oauth_client_id = os.getenv('OAUTH_CLIENT_ID')
+    assert oauth_client_id
+    logger.info(f'using oauth client id: {oauth_client_id}')
+    oauth_client_secret = os.getenv('OAUTH_CLIENT_SECRET')
+    assert oauth_client_secret
+    logger.info(f'using oauth client secret: {oauth_client_secret}')
+    oauth_secret = os.getenv('OAUTH_SECRET')
+    assert oauth_secret
+    logger.info(f'using oauth secret: {oauth_secret}')
+    oauth_domain = os.getenv('OAUTH_DOMAIN')
+    assert oauth_domain
+    logger.info(f'using domain: {oauth_domain}')
+
     credentials, project = google.auth.default()
     gcloud_client = container_v1.ClusterManagerClient(credentials=credentials)
 
@@ -197,8 +220,6 @@ def perform_cloud_ops():
         ),
         name='traefik-ingress-controller'
     )
-    static_ip = os.getenv('STATIC_IP')
-    logger.info(f'using static IP: {static_ip}')
     ensure_service(
         api=v1,
         service=V1Service(
@@ -260,8 +281,6 @@ def perform_cloud_ops():
         name='traefik-ingress-controller',
         namespace='default'
     )
-    admin_email = os.getenv('ADMIN_EMAIL')
-    logger.info(f'using ACME admin email: {admin_email}')
     ensure_deployment(
         api=apps_v1,
         deployment=V1Deployment(
@@ -325,6 +344,136 @@ def perform_cloud_ops():
         deployment=V1Deployment(
             api_version="apps/v1",
             metadata=V1ObjectMeta(
+                name='traefik-forward-auth',
+                labels={'app': 'traefik-forward-auth'}
+            ),
+            spec=V1DeploymentSpec(
+                replicas=1,
+                selector=V1LabelSelector(
+                    match_labels={'app': 'traefik-forward-auth'}
+                ),
+                template=V1PodTemplateSpec(
+                    metadata=V1ObjectMeta(
+                        name='traefik-forward-auth',
+                        labels={'app': 'traefik-forward-auth'}
+                    ),
+                    spec=V1PodSpec(
+                        containers=[
+                            V1Container(
+                                name='traefik-forward-auth',
+                                image='thomseddon/traefik-forward-auth:2',
+                                ports=[
+                                    V1ContainerPort(
+                                        name='auth',
+                                        container_port=4181
+                                    ),
+                                ],
+                                env=[
+                                    V1EnvVar(name='PROVIDERS_GOOGLE_CLIENT_ID', value=oauth_client_id),
+                                    # V1EnvVar(name='LOG_LEVEL', value='trace'),
+                                    V1EnvVar(name='PROVIDERS_GOOGLE_CLIENT_SECRET', value=oauth_client_secret),
+                                    V1EnvVar(name='SECRET', value=oauth_secret),
+                                    V1EnvVar(name='DOMAIN', value=oauth_domain),
+                                    V1EnvVar(name='COOKIE_DOMAIN', value=domain),
+                                    V1EnvVar(name='AUTH_HOST', value=f'auth.{domain}'),
+                                ]
+                            )
+                        ]
+                    )
+                )
+            )
+        ),
+        name='traefik-forward-auth',
+        namespace='default'
+    )
+    ensure_custom_object(
+        api=custom_api,
+        custom_object={
+            'apiVersion': 'traefik.containo.us/v1alpha1',
+            'kind': 'IngressRoute',
+            'metadata': {
+                'name': 'traefik-forward-auth',
+            },
+            'spec': {
+                'entryPoints': [
+                    'websecure'
+                ],
+                'routes': [
+                    {
+                        'match': f'Host(`auth.{domain}`)',
+                        'kind': 'Rule',
+                        'services': [
+                            {
+                                'name': 'traefik-forward-auth',
+                                'port': 4181
+                            }
+                        ],
+                        'middlewares': [
+                            {'name': 'traefik-forward-auth'}
+                        ]
+                    }
+                ],
+                'tls': {
+                    'certResolver': 'default'
+                }
+            }
+        },
+        group='traefik.containo.us',
+        plural='ingressroutes',
+        version='v1alpha1',
+        name='traefik-forward-auth',
+        namespace='default'
+    )
+    ensure_custom_object(
+        api=custom_api,
+        custom_object={
+            'apiVersion': 'traefik.containo.us/v1alpha1',
+            'kind': 'Middleware',
+            'metadata': {
+                'name': 'traefik-forward-auth',
+            },
+            'spec': {
+                'forwardAuth': {
+                    'address': 'http://traefik-forward-auth:4181',
+                    'authResponseHeaders': [
+                        'X-Forwarded-User'
+                    ],
+                }
+            }
+        },
+        group='traefik.containo.us',
+        plural='middlewares',
+        version='v1alpha1',
+        name='traefik-forward-auth',
+        namespace='default'
+    )
+    ensure_service(
+        api=v1,
+        service=V1Service(
+            api_version="v1",
+            metadata=V1ObjectMeta(
+                name='traefik-forward-auth'
+            ),
+            spec=V1ServiceSpec(
+                type='ClusterIP',
+                ports=[
+                    V1ServicePort(
+                        protocol='TCP',
+                        port=4181,
+                        name='auth'
+                    ),
+                ],
+                selector={'app': 'traefik-forward-auth'}
+            )
+        ),
+        name='traefik-forward-auth',
+        namespace='default'
+    )
+    ensure_deployment(
+        api=apps_v1,
+        deployment=V1Deployment(
+            api_version="apps/v1",
+            metadata=V1ObjectMeta(
                 name='whoami',
                 labels={'app': 'whoami'}
             ),
@@ -335,11 +484,10 @@ def perform_cloud_ops():
                 ),
                 template=V1PodTemplateSpec(
                     metadata=V1ObjectMeta(
-                        name='traefik',
+                        name='whoami',
                         labels={'app': 'whoami'}
                     ),
                     spec=V1PodSpec(
-                        service_account_name='traefik-ingress-controller',
                         containers=[
                             V1Container(
                                 name='whoami',
@@ -359,15 +507,13 @@ def perform_cloud_ops():
         name='whoami',
         namespace='default'
     )
-    domain = os.getenv('DOMAIN')
-    logger.info(f'using domain: {domain}')
     ensure_custom_object(
         api=custom_api,
         custom_object={
             'apiVersion': 'traefik.containo.us/v1alpha1',
             'kind': 'IngressRoute',
             'metadata': {
-                'name': 'ingressroutetls',
+                'name': 'whoami',
             },
             'spec': {
                 'entryPoints': [
@@ -382,6 +528,9 @@ def perform_cloud_ops():
                                 'name': 'whoami',
                                 'port': 80
                             }
+                        ],
+                        'middlewares': [
+                            {'name': 'traefik-forward-auth'}
                         ]
                     }
                 ],
@@ -393,7 +542,7 @@ def perform_cloud_ops():
         group='traefik.containo.us',
         plural='ingressroutes',
         version='v1alpha1',
-        name='ingressroutetls',
+        name='whoami',
         namespace='default'
     )
 
