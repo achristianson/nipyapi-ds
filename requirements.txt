@@ -27,3 +27,4 @@ djangorestframework>=3.10.3
 django-background-tasks>=1.2.0
 google-cloud-container>=0.3.0
 kubernetes>=10.0.1
+twisted>=19.7.0

@@ -49,7 +49,7 @@ class NifiInstanceNew extends Component {
             body: JSON.stringify(inst),
             headers: new Headers({"Content-Type": "application/json"})
         };
-        fetch("/api/nifi/", conf).then(response => this.setState({submitted: true}));
+        fetch("/api/nifi/new", conf).then(response => this.setState({submitted: true}));
 
     };
 
@@ -88,7 +88,7 @@ class NifiInstanceNew extends Component {
                             <div className="control">
                                 <select name="cluster" value={this.state.cluster} onChange={this.handleChange}>
                                     <option key=""/>
-                                    <DataProvider endpoint={"/api/k8s-cluster/"}
+                                    <DataProvider endpoint={"/api/k8s-cluster"}
                                                   placeholder={<React.Fragment/>}
                                                   render={data => data.map(el => (
                                                       <option key={el.id}
@@ -125,7 +125,7 @@ class NifiInstanceDetail extends Component {
 
     handleDestroy = () => {
         console.log("Requesting destruction of nifi instance: " + this.props.data.id);
-        fetch("/api/nifi/" + this.props.data.id + "/", {
+        fetch("/api/nifi/" + this.props.data.id + "", {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json"
@@ -167,9 +167,9 @@ class NifiInstanceDetail extends Component {
                             </tr>
                             <tr>
                                 <td>Cluster</td>
-                                <td><DataProvider endpoint={"/api/k8s-cluster/" + this.props.data.cluster + "/"}
-                                                  placeholder={<React.Fragment>Loading...</React.Fragment>}
-                                                  render={data => <ClusterMini data={data}/>}/></td>
+                                <td>
+                                    <ClusterMini data={this.props.data.cluster}/>
+                                </td>
                             </tr>
                             </tbody>
                         </table>
@@ -186,7 +186,7 @@ class NifiInstanceDetail extends Component {
 }
 
 const NifiInstance = ({match}) => (
-    <DataProvider endpoint={"/api/nifi/" + match.params.nifiInstanceId + "/"}
+    <DataProvider endpoint={"/api/nifi/" + match.params.nifiInstanceId}
                   placeholder={<p>Loading...</p>}
                   render={data => <NifiInstanceDetail data={data}/>}/>
 );
@@ -219,7 +219,7 @@ class NifiInstanceList extends Component {
                 </Breadcrumb>
                 <section className="">
                     <div className="content">
-                        <DataProvider endpoint="/api/nifi/"
+                        <DataProvider endpoint="/api/nifi"
                                       placeholder={<p>Loading...</p>}
                                       render={data => <Table data={data.map(d => {
                                           return {
