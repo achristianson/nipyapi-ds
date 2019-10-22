@@ -1,5 +1,6 @@
 import os
 
+from django.db.models import Q
 from django.http import JsonResponse
 from nifi_web.bg_tasks import perform_cloud_ops
 from nifi_web.models import NifiInstance, K8sCluster
@@ -8,7 +9,7 @@ from rest_framework import generics
 
 
 class NifiInstanceList(generics.ListAPIView):
-    queryset = NifiInstance.objects.all()
+    queryset = NifiInstance.objects.filter(~Q(state='DESTROYED'))
     serializer_class = NifiInstanceSerializer
 
 
