@@ -8,11 +8,11 @@ from background_task import background
 from google.cloud import container_v1
 from kubernetes import client
 from kubernetes.client import V1ObjectMeta, V1ServiceSpec, \
-    V1ServicePort, V1Service
-from nifi_web.models import K8sCluster, NifiInstance
-
-from nifi_web.k8s.general import auth_gcloud_k8s, ensure_service
+    V1ServicePort, V1Service, V1Container
+from nifi_web.k8s.general import auth_gcloud_k8s, ensure_service, ensure_single_container_deployment, \
+    ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment
 from nifi_web.k8s.traefik import ensure_traefik
+from nifi_web.models import K8sCluster, NifiInstance
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ def perform_cloud_ops():
 
     api_core_v1 = client.CoreV1Api()
     api_apps_v1 = client.AppsV1Api()
-    api_custom_api = client.CustomObjectsApi()
+    api_custom = client.CustomObjectsApi()
     api_extensions_v1_beta1 = client.ExtensionsV1beta1Api()
     api_ext_v1_beta1 = client.ApiextensionsV1beta1Api()
     api_rbac_auth_v1_b1 = client.RbacAuthorizationV1beta1Api()
@@ -115,7 +115,7 @@ def perform_cloud_ops():
         api_core_v1,
         api_ext_v1_beta1,
         api_apps_v1,
-        api_custom_api,
+        api_custom,
         api_rbac_auth_v1_b1,
         admin_email,
         domain,
@@ -129,60 +129,49 @@ def perform_cloud_ops():
     for instance in NifiInstance.objects.filter(state='PENDING_CREATE'):
         instance.state = 'CREATING'
         instance.save()
-
-    ensure_service(
-        api=api_core_v1,
-        service=V1Service(
-            api_version="v1",
-            metadata=V1ObjectMeta(
-                name='nifi',
-                labels={'app': 'nifi'}
-            ),
-            spec=V1ServiceSpec(
-                type='ClusterIP',
-                ports=[
-                    V1ServicePort(
-                        port=8080,
-                        target_port=8080,
-                        name='web'
-                    )
-                ],
-                selector={'app': 'nifi'}
+        port_name = 'web'
+        instance.state = 'CREATE_FAILED'
+        try:
+            ensure_single_container_deployment(
+                api_apps_v1,
+                container=V1Container(
+                    name="apache",
+                    image="apache/nifi:1.9.2",
+                    env=[
+                        client.V1EnvVar(name='NIFI_WEB_HTTP_HOST', value='0.0.0.0')
+                    ],
+                    ports=[client.V1ContainerPort(name=port_name, container_port=8080)]),
+                name=instance.hostname,
+                replicas=1
             )
-        ),
-        name='nifi',
-        namespace='default'
-    )
-    # Creation of the Deployment in specified namespace
-    # (Can replace "default" with a namespace you may have created)
-    # extensions_v1_beta1.create_namespaced_ingress(
-    #     namespace="default",
-    #     body=(client.ExtensionsV1beta1Ingress(
-    #         api_version="extensions/v1beta1",
-    #         kind="Ingress",
-    #         metadata=client.V1ObjectMeta(name="nifi", annotations={
-    #             "nginx.ingress.kubernetes.io/rewrite-target": "/"
-    #         }),
-    #         spec=client.ExtensionsV1beta1IngressSpec(
-    #             rules=[client.ExtensionsV1beta1IngressRule(
-    #                 # host="somehost.com",
-    #                 http=client.ExtensionsV1beta1HTTPIngressRuleValue(
-    #                     paths=[client.ExtensionsV1beta1HTTPIngressPath(
-    #                         path="/",
-    #                         backend=client.ExtensionsV1beta1IngressBackend(
-    #                             service_port=8080,
-    #                             service_name="nifi")
-    #
-    #                     )]
-    #                 )
-    #             )
-    #             ]
-    #         )
-    #     ))
-    # )
+            ensure_ingress_routed_svc(
+                api_core_v1=api_core_v1,
+                api_custom=api_custom,
+                domain=domain,
+                name=instance.hostname,
+                port_name=port_name,
+                svc_port=80,
+                target_port=8080
+            )
+            instance.state = 'RUNNING'
+        finally:
+            instance.save()
 
-    # api_response = apps_v1.create_namespaced_stateful_set(
-    #     body=(create_nifi_ss_object()),
-    #     namespace='default'
-    # )
-    # print("StatefulSet created. status='%s'" % str(api_response.status))
+    for instance in NifiInstance.objects.filter(state='PENDING_DESTROY'):
+        instance.state = 'DESTROYING'
+        instance.save()
+        instance.state = 'DESTROY_FAILED'
+        try:
+            destroy_deployment(
+                api_apps_v1,
+                namespace='default',
+                name=instance.hostname
+            )
+            destroy_ingress_routed_svc(
+                api_core_v1=api_core_v1,
+                api_custom=api_custom,
+                name=instance.hostname
+            )
+            instance.state = 'DESTROYED'
+        finally:
+            instance.save()

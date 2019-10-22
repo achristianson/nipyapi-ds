@@ -1,7 +1,7 @@
 from kubernetes import client
 from kubernetes.client import V1beta1CustomResourceDefinition, V1ObjectMeta, V1beta1CustomResourceDefinitionSpec, \
     V1Deployment, V1DeploymentSpec, V1LabelSelector, V1PodTemplateSpec, V1PodSpec, V1Service, V1ServiceSpec, \
-    V1ServicePort
+    V1ServicePort, V1DeleteOptions
 import logging
 from nifi_web.models import K8sCluster
 
@@ -33,6 +33,23 @@ def ensure_custom_object(api: client.CustomObjectsApi, custom_object, group, plu
         logger.info(f'custom object exists: {namespace}/{name}')
 
 
+def destroy_custom_object(api: client.CustomObjectsApi, group, plural, version, namespace, name):
+    if len(api.list_namespaced_custom_object(namespace=namespace,
+                                             field_selector=f'metadata.name={name}', group=group,
+                                             plural=plural, version=version)['items']) == 1:
+        logger.info(f'destroying custom object: {namespace}/{name}')
+        api.delete_namespaced_custom_object(
+            namespace=namespace,
+            group=group,
+            plural=plural,
+            version=version,
+            name=name,
+            body=V1DeleteOptions()
+        )
+    else:
+        logger.info(f'cannot find custom object to destroy: {namespace}/{name}')
+
+
 def ensure_deployment(api: client.AppsV1Api, deployment, namespace, name):
     if len(api.list_namespaced_deployment(namespace=namespace,
                                           field_selector=f'metadata.name={name}').items) == 0:
@@ -45,6 +62,18 @@ def ensure_deployment(api: client.AppsV1Api, deployment, namespace, name):
         logger.info(f'Deployment exists: {namespace}/{name}')
 
 
+def destroy_deployment(api: client.AppsV1Api, namespace, name):
+    if len(api.list_namespaced_deployment(namespace=namespace,
+                                          field_selector=f'metadata.name={name}').items) == 1:
+        logger.info(f'destroying Deployment: {namespace}/{name}')
+        api.delete_namespaced_deployment(
+            name=name,
+            namespace=namespace
+        )
+    else:
+        logger.info(f'cannot find Deployment to destroy: {namespace}/{name}')
+
+
 def ensure_service(api: client.CoreV1Api, service, namespace, name):
     if len(api.list_namespaced_service(namespace=namespace,
                                        field_selector=f'metadata.name={name}').items) == 0:
@@ -55,6 +84,18 @@ def ensure_service(api: client.CoreV1Api, service, namespace, name):
         )
     else:
         logger.info(f'Service exists: {namespace}/{name}')
+
+
+def destroy_service(api: client.CoreV1Api, namespace, name):
+    if len(api.list_namespaced_service(namespace=namespace,
+                                       field_selector=f'metadata.name={name}').items) == 1:
+        logger.info(f'destroying Service: {namespace}/{name}')
+        api.delete_namespaced_service(
+            name=name,
+            namespace=namespace
+        )
+    else:
+        logger.info(f'cannot find Service to destroy: {namespace}/{name}')
 
 
 def ensure_service_account(api: client.CoreV1Api, account, name, namespace):
@@ -113,7 +154,7 @@ def ensure_crd(api, name, group, kind, plural, singular, scope):
         logger.info(f'CustomResourceDefinition exists: {name}')
 
 
-def ensure_single_container_deployment(api_apps_v1, container, name):
+def ensure_single_container_deployment(api_apps_v1, container, name, replicas=1):
     ensure_deployment(
         api=api_apps_v1,
         deployment=V1Deployment(
@@ -123,7 +164,7 @@ def ensure_single_container_deployment(api_apps_v1, container, name):
                 labels={'app': name}
             ),
             spec=V1DeploymentSpec(
-                replicas=2,
+                replicas=replicas,
                 selector=V1LabelSelector(
                     match_labels={'app': name}
                 ),
@@ -145,7 +186,7 @@ def ensure_single_container_deployment(api_apps_v1, container, name):
     )
 
 
-def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, svc_port):
+def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, svc_port, target_port):
     ensure_service(
         api=api_core_v1,
         service=V1Service(
@@ -159,7 +200,8 @@ def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 
                     V1ServicePort(
                         protocol='TCP',
                         port=svc_port,
-                        name=port_name
+                        name=port_name,
+                        target_port=target_port
                     ),
                 ],
                 selector={'app': name}
@@ -200,6 +242,22 @@ def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 
                 }
             }
         },
+        group='traefik.containo.us',
+        plural='ingressroutes',
+        version='v1alpha1',
+        name=name,
+        namespace='default'
+    )
+
+
+def destroy_ingress_routed_svc(api_core_v1, api_custom, name):
+    destroy_service(
+        api=api_core_v1,
+        name=name,
+        namespace='default'
+    )
+    destroy_custom_object(
+        api=api_custom,
         group='traefik.containo.us',
         plural='ingressroutes',
         version='v1alpha1',

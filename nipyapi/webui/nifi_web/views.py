@@ -1,3 +1,7 @@
+import os
+
+from django.http import JsonResponse
+from nifi_web.bg_tasks import perform_cloud_ops
 from nifi_web.models import NifiInstance, K8sCluster
 from nifi_web.serializers import NifiInstanceSerializer, K8sClusterSerializer, NifiInstanceDeepSerializer
 from rest_framework import generics
@@ -28,3 +32,18 @@ class K8sClusterDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = K8sClusterSerializer
     lookup_url_kwarg = 'cluster_id'
     queryset = K8sCluster.objects.all()
+
+
+def get_config(request):
+    data = {
+        'domain': os.getenv('DOMAIN'),
+    }
+    return JsonResponse(data)
+
+
+def start_perform_cloud_ops(request):
+    perform_cloud_ops()
+    data = {
+        'status': 'OK',
+    }
+    return JsonResponse(data)

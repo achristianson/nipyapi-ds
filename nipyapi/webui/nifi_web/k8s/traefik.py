@@ -353,4 +353,4 @@ def ensure_whoami(api_apps_v1, api_core_v1, api_custom, domain):
                                    container_port=8000)]),
         name
     )
-    ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 80)
+    ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 80, 8000)
