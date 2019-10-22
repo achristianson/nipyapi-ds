@@ -3,7 +3,7 @@ from kubernetes.client import V1ClusterRole, V1ObjectMeta, V1PolicyRule, V1Clust
     V1PodTemplateSpec, V1PodSpec, V1Container, V1ContainerPort, V1EnvVar
 
 from nifi_web.k8s.general import ensure_crd, ensure_role, ensure_role_binding, ensure_service, ensure_service_account, \
-    ensure_deployment, ensure_custom_object
+    ensure_deployment, ensure_custom_object, ensure_single_container_deployment, ensure_ingress_routed_svc
 
 
 def ensure_traefik(api_core_v1, api_ext_v1_beta1, api_apps_v1, api_custom, api_rbac_auth_v1_b1, admin_email, domain,
@@ -137,28 +137,6 @@ def ensure_traefik(api_core_v1, api_ext_v1_beta1, api_apps_v1, api_custom, api_r
             )
         ),
         name='traefik',
-        namespace='default'
-    )
-    ensure_service(
-        api=api_core_v1,
-        service=V1Service(
-            api_version="v1",
-            metadata=V1ObjectMeta(
-                name='whoami'
-            ),
-            spec=V1ServiceSpec(
-                type='ClusterIP',
-                ports=[
-                    V1ServicePort(
-                        protocol='TCP',
-                        port=80,
-                        name='web'
-                    ),
-                ],
-                selector={'app': 'whoami'}
-            )
-        ),
-        name='whoami',
         namespace='default'
     )
     ensure_service_account(
@@ -360,79 +338,19 @@ def ensure_traefik(api_core_v1, api_ext_v1_beta1, api_apps_v1, api_custom, api_r
         name='traefik-forward-auth',
         namespace='default'
     )
-    ensure_deployment(
-        api=api_apps_v1,
-        deployment=V1Deployment(
-            api_version="apps/v1",
-            metadata=V1ObjectMeta(
-                name='whoami',
-                labels={'app': 'whoami'}
-            ),
-            spec=V1DeploymentSpec(
-                replicas=2,
-                selector=V1LabelSelector(
-                    match_labels={'app': 'whoami'}
-                ),
-                template=V1PodTemplateSpec(
-                    metadata=V1ObjectMeta(
-                        name='whoami',
-                        labels={'app': 'whoami'}
-                    ),
-                    spec=V1PodSpec(
-                        containers=[
-                            V1Container(
-                                name='whoami',
-                                image='containous/whoami',
-                                ports=[
-                                    V1ContainerPort(
-                                        name='web',
-                                        container_port=8000
-                                    ),
-                                ]
-                            )
-                        ]
-                    )
-                )
-            )
-        ),
-        name='whoami',
-        namespace='default'
+    ensure_whoami(api_apps_v1, api_core_v1, api_custom, domain)
+
+
+def ensure_whoami(api_apps_v1, api_core_v1, api_custom, domain):
+    name = 'whoami'
+    port_name = 'web'
+    ensure_single_container_deployment(
+        api_apps_v1,
+        V1Container(
+            name=name,
+            image='containous/whoami',
+            ports=[V1ContainerPort(name=port_name,
+                                   container_port=8000)]),
+        name
     )
-    ensure_custom_object(
-        api=api_custom,
-        custom_object={
-            'apiVersion': 'traefik.containo.us/v1alpha1',
-            'kind': 'IngressRoute',
-            'metadata': {
-                'name': 'whoami',
-            },
-            'spec': {
-                'entryPoints': [
-                    'websecure'
-                ],
-                'routes': [
-                    {
-                        'match': f'Host(`whoami.{domain}`)',
-                        'kind': 'Rule',
-                        'services': [
-                            {
-                                'name': 'whoami',
-                                'port': 80
-                            }
-                        ],
-                        'middlewares': [
-                            {'name': 'traefik-forward-auth'}
-                        ]
-                    }
-                ],
-                'tls': {
-                    'certResolver': 'default'
-                }
-            }
-        },
-        group='traefik.containo.us',
-        plural='ingressroutes',
-        version='v1alpha1',
-        name='whoami',
-        namespace='default'
-    )
+    ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 80)

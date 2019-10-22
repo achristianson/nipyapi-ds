@@ -13,6 +13,7 @@ class K8sCluster(models.Model):
 
 class NifiInstance(models.Model):
     name = models.CharField(max_length=100)
+    hostname = models.CharField(max_length=100)
     state = models.CharField(max_length=100, default='PENDING_CREATE')
     cluster = models.ForeignKey(K8sCluster, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

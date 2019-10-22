@@ -1,5 +1,7 @@
 from kubernetes import client
-from kubernetes.client import V1beta1CustomResourceDefinition, V1ObjectMeta, V1beta1CustomResourceDefinitionSpec
+from kubernetes.client import V1beta1CustomResourceDefinition, V1ObjectMeta, V1beta1CustomResourceDefinitionSpec, \
+    V1Deployment, V1DeploymentSpec, V1LabelSelector, V1PodTemplateSpec, V1PodSpec, V1Service, V1ServiceSpec, \
+    V1ServicePort
 import logging
 from nifi_web.models import K8sCluster
 
@@ -109,3 +111,98 @@ def ensure_crd(api, name, group, kind, plural, singular, scope):
             pass
     else:
         logger.info(f'CustomResourceDefinition exists: {name}')
+
+
+def ensure_single_container_deployment(api_apps_v1, container, name):
+    ensure_deployment(
+        api=api_apps_v1,
+        deployment=V1Deployment(
+            api_version="apps/v1",
+            metadata=V1ObjectMeta(
+                name=name,
+                labels={'app': name}
+            ),
+            spec=V1DeploymentSpec(
+                replicas=2,
+                selector=V1LabelSelector(
+                    match_labels={'app': name}
+                ),
+                template=V1PodTemplateSpec(
+                    metadata=V1ObjectMeta(
+                        name=name,
+                        labels={'app': name}
+                    ),
+                    spec=V1PodSpec(
+                        containers=[
+                            container
+                        ]
+                    )
+                )
+            )
+        ),
+        name=name,
+        namespace='default'
+    )
+
+
+def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, svc_port):
+    ensure_service(
+        api=api_core_v1,
+        service=V1Service(
+            api_version="v1",
+            metadata=V1ObjectMeta(
+                name=name
+            ),
+            spec=V1ServiceSpec(
+                type='ClusterIP',
+                ports=[
+                    V1ServicePort(
+                        protocol='TCP',
+                        port=svc_port,
+                        name=port_name
+                    ),
+                ],
+                selector={'app': name}
+            )
+        ),
+        name=name,
+        namespace='default'
+    )
+    ensure_custom_object(
+        api=api_custom,
+        custom_object={
+            'apiVersion': 'traefik.containo.us/v1alpha1',
+            'kind': 'IngressRoute',
+            'metadata': {
+                'name': name,
+            },
+            'spec': {
+                'entryPoints': [
+                    'websecure'
+                ],
+                'routes': [
+                    {
+                        'match': f'Host(`{name}.{domain}`)',
+                        'kind': 'Rule',
+                        'services': [
+                            {
+                                'name': name,
+                                'port': svc_port
+                            }
+                        ],
+                        'middlewares': [
+                            {'name': 'traefik-forward-auth'}
+                        ]
+                    }
+                ],
+                'tls': {
+                    'certResolver': 'default'
+                }
+            }
+        },
+        group='traefik.containo.us',
+        plural='ingressroutes',
+        version='v1alpha1',
+        name=name,
+        namespace='default'
+    )

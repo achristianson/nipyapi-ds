@@ -32,6 +32,7 @@ const NifiInstancesCrumb = () => (
 class NifiInstanceNew extends Component {
     state = {
         name: "",
+        hostname: "",
         creating: false,
         submitted: false,
         cluster: 0
@@ -42,6 +43,7 @@ class NifiInstanceNew extends Component {
         this.setState({creating: true});
         const inst = {
             name: this.state.name,
+            hostname: this.state.hostname,
             cluster: parseInt(this.state.cluster)
         };
         const conf = {
@@ -79,6 +81,19 @@ class NifiInstanceNew extends Component {
                                     name="name"
                                     onChange={this.handleChange}
                                     value={this.state.name}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="field">
+                            <label className="label">Hostname</label>
+                            <div className="control">
+                                <input
+                                    className="input"
+                                    type="text"
+                                    name="hostname"
+                                    onChange={this.handleChange}
+                                    value={this.state.hostname}
                                     required
                                 />
                             </div>
@@ -161,6 +176,10 @@ class NifiInstanceDetail extends Component {
 
                         <table className="table is-fullwidth">
                             <tbody>
+                            <tr>
+                                <td>Hostname</td>
+                                <td>{this.props.data.hostname}</td>
+                            </tr>
                             <tr>
                                 <td>State</td>
                                 <td>{this.props.data.state}</td>

@@ -9,7 +9,7 @@ from google.cloud import container_v1
 from kubernetes import client
 from kubernetes.client import V1ObjectMeta, V1ServiceSpec, \
     V1ServicePort, V1Service
-from nifi_web.models import K8sCluster
+from nifi_web.models import K8sCluster, NifiInstance
 
 from nifi_web.k8s.general import auth_gcloud_k8s, ensure_service
 from nifi_web.k8s.traefik import ensure_traefik
@@ -125,6 +125,10 @@ def perform_cloud_ops():
         oauth_domain,
         oauth_secret
     )
+
+    for instance in NifiInstance.objects.filter(state='PENDING_CREATE'):
+        instance.state = 'CREATING'
+        instance.save()
 
     ensure_service(
         api=api_core_v1,
