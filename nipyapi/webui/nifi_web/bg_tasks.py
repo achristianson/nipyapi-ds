@@ -7,10 +7,10 @@ import urllib3
 from background_task import background
 from google.cloud import container_v1
 from kubernetes import client
-from kubernetes.client import V1ObjectMeta, V1ServiceSpec, \
-    V1ServicePort, V1Service, V1Container
-from nifi_web.k8s.general import auth_gcloud_k8s, ensure_service, ensure_single_container_deployment, \
-    ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment
+from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMount
+from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deployment, \
+    ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_single_container_statefulset, \
+    destroy_statefulset
 from nifi_web.k8s.traefik import ensure_traefik
 from nifi_web.models import K8sCluster, NifiInstance
 
@@ -132,17 +132,27 @@ def perform_cloud_ops():
         port_name = 'web'
         instance.state = 'CREATE_FAILED'
         try:
-            ensure_single_container_deployment(
-                api_apps_v1,
-                container=V1Container(
+            volume_paths = [
+                ('db-repo', '/opt/nifi/nifi-current/database_repository', '20Gi'),
+                ('flowfile-repo', '/opt/nifi/nifi-current/flowfile_repository', '20Gi'),
+                ('provenance-repo', '/opt/nifi/nifi-current/provenance_repository', '20Gi'),
+                ('content-repo', '/opt/nifi/nifi-current/content_repository', '20Gi'),
+            ]
+            ensure_single_container_statefulset(
+                api_apps_v1=api_apps_v1,
+                name=instance.hostname,
+                replicas=1,
+                container=(V1Container(
                     name="apache",
                     image="apache/nifi:1.9.2",
-                    env=[
-                        client.V1EnvVar(name='NIFI_WEB_HTTP_HOST', value='0.0.0.0')
-                    ],
-                    ports=[client.V1ContainerPort(name=port_name, container_port=8080)]),
-                name=instance.hostname,
-                replicas=1
+                    env=[V1EnvVar(name='NIFI_WEB_HTTP_HOST', value='0.0.0.0')],
+                    ports=[V1ContainerPort(container_port=8080)],
+                    volume_mounts=[V1VolumeMount(
+                        name=path[0],
+                        mount_path=path[1]
+                    ) for path in volume_paths]
+                )),
+                volume_paths=volume_paths
             )
             ensure_ingress_routed_svc(
                 api_core_v1=api_core_v1,
@@ -162,8 +172,9 @@ def perform_cloud_ops():
         instance.save()
         instance.state = 'DESTROY_FAILED'
         try:
-            destroy_deployment(
+            destroy_statefulset(
                 api_apps_v1,
+                api_core_v1,
                 namespace='default',
                 name=instance.hostname
             )
@@ -175,3 +186,5 @@ def perform_cloud_ops():
             instance.state = 'DESTROYED'
         finally:
             instance.save()
+
+

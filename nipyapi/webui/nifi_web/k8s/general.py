@@ -1,7 +1,7 @@
 from kubernetes import client
 from kubernetes.client import V1beta1CustomResourceDefinition, V1ObjectMeta, V1beta1CustomResourceDefinitionSpec, \
     V1Deployment, V1DeploymentSpec, V1LabelSelector, V1PodTemplateSpec, V1PodSpec, V1Service, V1ServiceSpec, \
-    V1ServicePort, V1DeleteOptions
+    V1ServicePort, V1DeleteOptions, V1PersistentVolumeClaim, V1PersistentVolumeClaimSpec, V1ResourceRequirements
 import logging
 from nifi_web.models import K8sCluster
 
@@ -62,6 +62,18 @@ def ensure_deployment(api: client.AppsV1Api, deployment, namespace, name):
         logger.info(f'Deployment exists: {namespace}/{name}')
 
 
+def ensure_statefulset(api: client.AppsV1Api, stateful_set, namespace, name):
+    if len(api.list_namespaced_deployment(namespace=namespace,
+                                          field_selector=f'metadata.name={name}').items) == 0:
+        logger.info(f'creating StatefulSet: {namespace}/{name}')
+        api.create_namespaced_stateful_set(
+            body=stateful_set,
+            namespace=namespace
+        )
+    else:
+        logger.info(f'StatefulSet exists: {namespace}/{name}')
+
+
 def destroy_deployment(api: client.AppsV1Api, namespace, name):
     if len(api.list_namespaced_deployment(namespace=namespace,
                                           field_selector=f'metadata.name={name}').items) == 1:
@@ -72,6 +84,24 @@ def destroy_deployment(api: client.AppsV1Api, namespace, name):
         )
     else:
         logger.info(f'cannot find Deployment to destroy: {namespace}/{name}')
+
+
+def destroy_statefulset(api: client.AppsV1Api, core_api: client.CoreV1Api, namespace, name):
+    for pvc in core_api.list_namespaced_persistent_volume_claim(namespace=namespace,
+                                                                label_selector=f'app={name}').items:
+        core_api.delete_namespaced_persistent_volume_claim(
+            name=pvc.metadata.name,
+            namespace='default'
+        )
+    if len(api.list_namespaced_stateful_set(namespace=namespace,
+                                            field_selector=f'metadata.name={name}').items) == 1:
+        logger.info(f'destroying StatefulSet: {namespace}/{name}')
+        api.delete_namespaced_stateful_set(
+            name=name,
+            namespace=namespace
+        )
+    else:
+        logger.info(f'cannot find StatefulSet to destroy: {namespace}/{name}')
 
 
 def ensure_service(api: client.CoreV1Api, service, namespace, name):
@@ -263,4 +293,45 @@ def destroy_ingress_routed_svc(api_core_v1, api_custom, name):
         version='v1alpha1',
         name=name,
         namespace='default'
+    )
+
+
+def ensure_single_container_statefulset(api_apps_v1, name, container, volume_paths, replicas=1):
+    volume_claim_templates = [V1PersistentVolumeClaim(
+        metadata=V1ObjectMeta(
+            name=path[0],
+        ),
+        spec=V1PersistentVolumeClaimSpec(
+            access_modes=['ReadWriteOnce'],
+            resources=V1ResourceRequirements(
+                requests={
+                    'storage': path[2]
+                }
+            ),
+            storage_class_name='standard'
+        )
+    ) for path in volume_paths]
+    ss = client.V1StatefulSet(
+        api_version="apps/v1",
+        kind="StatefulSet",
+        metadata=client.V1ObjectMeta(
+            name=name,
+            labels={'app': name}
+        ),
+        spec=client.V1StatefulSetSpec(
+            replicas=replicas,
+            service_name=name,
+            template=V1PodTemplateSpec(
+                metadata=V1ObjectMeta(labels={"app": name}),
+                spec=V1PodSpec(containers=[container])
+            ),
+            selector={'matchLabels': {'app': name}},
+            volume_claim_templates=volume_claim_templates
+        )
+    )
+    ensure_statefulset(
+        api_apps_v1,
+        stateful_set=ss,
+        namespace='default',
+        name=name
     )
