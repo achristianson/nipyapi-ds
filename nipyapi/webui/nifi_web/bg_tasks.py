@@ -7,10 +7,11 @@ import urllib3
 from background_task import background
 from google.cloud import container_v1
 from kubernetes import client
-from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMount
+from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMount, V1StorageClass, V1ObjectMeta, \
+    V1SecurityContext
 from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deployment, \
     ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_single_container_statefulset, \
-    destroy_statefulset
+    destroy_statefulset, ensure_storage_class
 from nifi_web.k8s.traefik import ensure_traefik
 from nifi_web.models import K8sCluster, NifiInstance
 
@@ -100,6 +101,7 @@ def perform_cloud_ops():
 
     api_core_v1 = client.CoreV1Api()
     api_apps_v1 = client.AppsV1Api()
+    api_storage_v1 = client.StorageV1Api()
     api_custom = client.CustomObjectsApi()
     api_extensions_v1_beta1 = client.ExtensionsV1beta1Api()
     api_ext_v1_beta1 = client.ApiextensionsV1beta1Api()
@@ -133,18 +135,18 @@ def perform_cloud_ops():
         instance.state = 'CREATE_FAILED'
         try:
             volume_paths = [
-                ('db-repo', '/opt/nifi/nifi-current/database_repository', '20Gi'),
-                ('flowfile-repo', '/opt/nifi/nifi-current/flowfile_repository', '20Gi'),
-                ('provenance-repo', '/opt/nifi/nifi-current/provenance_repository', '20Gi'),
-                ('content-repo', '/opt/nifi/nifi-current/content_repository', '20Gi'),
+                ('db-repo', '/opt/nifi/nifi-current/database_repository', '20Gi', 'standard'),
+                ('flowfile-repo', '/opt/nifi/nifi-current/flowfile_repository', '20Gi', 'standard'),
+                ('provenance-repo', '/opt/nifi/nifi-current/provenance_repository', '20Gi', 'standard'),
+                ('content-repo', '/opt/nifi/nifi-current/content_repository', '20Gi', 'standard'),
             ]
             ensure_single_container_statefulset(
                 api_apps_v1=api_apps_v1,
                 name=instance.hostname,
                 replicas=1,
                 container=(V1Container(
-                    name="apache",
-                    image="apache/nifi:1.9.2",
+                    name='nifi',
+                    image='apache/nifi:1.9.2',
                     env=[V1EnvVar(name='NIFI_WEB_HTTP_HOST', value='0.0.0.0')],
                     ports=[V1ContainerPort(container_port=8080)],
                     volume_mounts=[V1VolumeMount(
@@ -152,6 +154,17 @@ def perform_cloud_ops():
                         mount_path=path[1]
                     ) for path in volume_paths]
                 )),
+                init_containers=[
+                    V1Container(
+                        name='init-permissions',
+                        image='busybox',
+                        command=['sh', '-c', 'chown -R 1000:1000 /opt/nifi/nifi-current'],
+                        volume_mounts=[V1VolumeMount(
+                            name=path[0],
+                            mount_path=path[1]
+                        ) for path in volume_paths]
+                    )
+                ],
                 volume_paths=volume_paths
             )
             ensure_ingress_routed_svc(

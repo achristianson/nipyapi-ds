@@ -156,6 +156,14 @@ def ensure_role_binding(api: client.RbacAuthorizationV1beta1Api, role_binding, n
         logger.info(f'ClusterRoleBinding exists: {name}')
 
 
+def ensure_storage_class(api: client.StorageV1Api, cls, name):
+    if len(api.list_storage_class(field_selector=f'metadata.name={name}').items) == 0:
+        logger.info(f'creating StorageClass: {name}')
+        api.create_storage_class(cls)
+    else:
+        logger.info(f'StorageClass exists: {name}')
+
+
 def ensure_crd(api, name, group, kind, plural, singular, scope):
     if len(api.list_custom_resource_definition(field_selector=f'metadata.name={name}').items) == 0:
         logger.info(f'creating CustomResourceDefinition: {name}')
@@ -296,10 +304,10 @@ def destroy_ingress_routed_svc(api_core_v1, api_custom, name):
     )
 
 
-def ensure_single_container_statefulset(api_apps_v1, name, container, volume_paths, replicas=1):
+def ensure_single_container_statefulset(api_apps_v1, name, container, volume_paths, replicas=1, init_containers=[]):
     volume_claim_templates = [V1PersistentVolumeClaim(
         metadata=V1ObjectMeta(
-            name=path[0],
+            name=path[0]
         ),
         spec=V1PersistentVolumeClaimSpec(
             access_modes=['ReadWriteOnce'],
@@ -308,7 +316,7 @@ def ensure_single_container_statefulset(api_apps_v1, name, container, volume_pat
                     'storage': path[2]
                 }
             ),
-            storage_class_name='standard'
+            storage_class_name=path[3]
         )
     ) for path in volume_paths]
     ss = client.V1StatefulSet(
@@ -323,7 +331,10 @@ def ensure_single_container_statefulset(api_apps_v1, name, container, volume_pat
             service_name=name,
             template=V1PodTemplateSpec(
                 metadata=V1ObjectMeta(labels={"app": name}),
-                spec=V1PodSpec(containers=[container])
+                spec=V1PodSpec(
+                    containers=[container],
+                    init_containers=init_containers
+                )
             ),
             selector={'matchLabels': {'app': name}},
             volume_claim_templates=volume_claim_templates
