@@ -64,8 +64,8 @@ def ensure_deployment(api: client.AppsV1Api, deployment, namespace, name):
 
 
 def ensure_statefulset(api: client.AppsV1Api, stateful_set, namespace, name):
-    if len(api.list_namespaced_deployment(namespace=namespace,
-                                          field_selector=f'metadata.name={name}').items) == 0:
+    if len(api.list_namespaced_stateful_set(namespace=namespace,
+                                            field_selector=f'metadata.name={name}').items) == 0:
         logger.info(f'creating StatefulSet: {namespace}/{name}')
         api.create_namespaced_stateful_set(
             body=stateful_set,
