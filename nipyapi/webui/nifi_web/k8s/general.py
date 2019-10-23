@@ -1,8 +1,9 @@
+import logging
+
 from kubernetes import client
 from kubernetes.client import V1beta1CustomResourceDefinition, V1ObjectMeta, V1beta1CustomResourceDefinitionSpec, \
     V1Deployment, V1DeploymentSpec, V1LabelSelector, V1PodTemplateSpec, V1PodSpec, V1Service, V1ServiceSpec, \
     V1ServicePort, V1DeleteOptions, V1PersistentVolumeClaim, V1PersistentVolumeClaimSpec, V1ResourceRequirements
-import logging
 from nifi_web.models import K8sCluster
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,18 @@ def ensure_service_account(api: client.CoreV1Api, account, name, namespace):
         )
     else:
         logger.info(f'ServiceAccount exists: {name}')
+
+
+def ensure_secret(api: client.CoreV1Api, secret, name, namespace):
+    if len(api.list_namespaced_secret(namespace=namespace,
+                                      field_selector=f'metadata.name={name}').items) == 0:
+        logger.info(f'creating secret: {name}')
+        api.create_namespaced_secret(
+            namespace=namespace,
+            body=secret
+        )
+    else:
+        logger.info(f'secret exists: {name}')
 
 
 def ensure_role(api: client.RbacAuthorizationV1beta1Api, role, name):
@@ -304,7 +317,12 @@ def destroy_ingress_routed_svc(api_core_v1, api_custom, name):
     )
 
 
-def ensure_single_container_statefulset(api_apps_v1, name, container, volume_paths, replicas=1, init_containers=[]):
+def ensure_single_container_statefulset(api_apps_v1, name, container, volume_paths, replicas=1, init_containers=None,
+                                        volumes=None):
+    if volumes is None:
+        volumes = []
+    if init_containers is None:
+        init_containers = []
     volume_claim_templates = [V1PersistentVolumeClaim(
         metadata=V1ObjectMeta(
             name=path[0]
@@ -333,6 +351,7 @@ def ensure_single_container_statefulset(api_apps_v1, name, container, volume_pat
                 metadata=V1ObjectMeta(labels={"app": name}),
                 spec=V1PodSpec(
                     containers=[container],
+                    volumes=volumes,
                     init_containers=init_containers
                 )
             ),
