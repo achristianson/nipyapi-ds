@@ -4,6 +4,6 @@ set -e
 
 cd /opt/nipyapi/nipyapi/webui
 
-python manage.py migrate
-python manage.py process_tasks &
-python manage.py runserver
+python3 manage.py migrate
+python3 manage.py process_tasks &
+python3 manage.py runserver 0.0.0.0:8000
