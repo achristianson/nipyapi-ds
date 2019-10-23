@@ -66,14 +66,28 @@ export class NifiInstanceNew extends Component {
                         <div className="field">
                             <label className="label">Hostname</label>
                             <div className="control">
-                                <input
-                                    className="input"
-                                    type="text"
-                                    name="hostname"
-                                    onChange={this.handleChange}
-                                    value={this.state.hostname}
-                                    required
-                                />
+                                <div className="columns">
+                                    <div className="column is-one-quarter">
+                                        <input
+                                            className="input"
+                                            type="text"
+                                            name="hostname"
+                                            onChange={this.handleChange}
+                                            value={this.state.hostname}
+                                            style={{textAlign: 'right'}}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="column">
+                                        <div className="field">
+                                            <label className="label">{' '}</label>
+                                            <div className="control">
+                                                {window.nifi_web_config ? '.' + window.nifi_web_config.domain : ''}
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="field">
