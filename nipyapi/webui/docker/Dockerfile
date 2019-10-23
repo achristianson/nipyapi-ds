@@ -10,11 +10,16 @@ RUN apk add bash \
             libxml2-dev \
             libxslt-dev \
             build-base \
+            nodejs \
+            npm \
             wget
 RUN pip3 install -U pip
 ADD requirements.txt /requirements.txt
 RUN pip3 install -r /requirements.txt && rm /requirements.txt
 ADD . /opt/nipyapi
+RUN cd /opt/nipyapi/nipyapi/webui && \
+    npm i && \
+    npm run build
 RUN mkdir -p /opt/nipyapi/bin
 ADD nipyapi/webui/docker/start.sh /opt/nipyapi/bin/
 VOLUME /opt/nipyapi/data
