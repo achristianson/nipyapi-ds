@@ -1,66 +1,11 @@
-import React, {Component} from "react";
+import React from "react";
 import ReactDOM from "react-dom";
-import DataProvider from "./DataProvider";
-import Table from "./Table";
-import {BrowserRouter as Router, Link, Redirect, Route} from "react-router-dom";
-import {AdminCrumb, Breadcrumb, CurrentCrumb} from "./Breadcrumb";
-import {NifiInstanceDetail} from "./NifiInstanceDetail";
+import {BrowserRouter as Router, NavLink, Route} from "react-router-dom";
 import {NifiInstanceNew} from "./NifiInstanceNew";
 import {perform_cloud_ops} from "../util/bg_tasks";
-
-const NifiInstance = ({match}) => (
-    <DataProvider endpoint={"/api/nifi/" + match.params.nifiInstanceId}
-                  placeholder={<p>Loading...</p>}
-                  render={data => <NifiInstanceDetail data={data}/>}/>
-);
-
-class NifiInstanceList extends Component {
-    state = {
-        adding: false
-    };
-
-    handleRefresh = () => {
-        this.refs.provider.refresh();
-    };
-
-    handleNew = () => {
-        this.setState({
-            adding: true
-        })
-    };
-
-    render() {
-        if (this.state.adding) {
-            return <Redirect to="/create_nifi" push={true}/>;
-        }
-
-        return (
-            <React.Fragment>
-                <Breadcrumb>
-                    <AdminCrumb/>
-                    <CurrentCrumb>NiFi Instances</CurrentCrumb>
-                </Breadcrumb>
-                <section className="">
-                    <div className="content">
-                        <DataProvider endpoint="/api/nifi"
-                                      placeholder={<p>Loading...</p>}
-                                      render={data => <Table data={data.map(d => {
-                                          return {
-                                              id: d.id,
-                                              "Instance": <Link to={"/nifi/" + d.id}>{d.name}</Link>,
-                                              "State": d.state
-                                          }
-                                      })}/>} ref="provider"/>
-                        <div className="buttons">
-                            <a className="button" onClick={this.handleRefresh}>Refresh</a>
-                            <a className="button" onClick={this.handleNew}>New Instance</a>
-                        </div>
-                    </div>
-                </section>
-            </React.Fragment>
-        );
-    }
-}
+import {NifiInstance, NifiInstanceList} from "./NifiInstanceList";
+import {NifiImage, NifiImageList} from "./NifiImageList";
+import {NifiImageNew} from "./NifiImageNew";
 
 const App = () => (
     <React.Fragment>
@@ -98,7 +43,8 @@ const App = () => (
                             General
                         </p>
                         <ul className="menu-list">
-                            <li><a className="is-active">NiFi Instances</a></li>
+                            <li><NavLink to="/" exact={true} activeClassName="is-active">NiFi Instances</NavLink></li>
+                            <li><NavLink to="/nifi-images" activeClassName="is-active">NiFi Images</NavLink></li>
                             <li><a>Kubernetes</a></li>
                         </ul>
                         <p className="menu-label">
@@ -113,6 +59,9 @@ const App = () => (
                     <Route exact path="/" component={NifiInstanceList}/>
                     <Route path={`/create_nifi`} component={NifiInstanceNew}/>
                     <Route path={`/nifi/:nifiInstanceId`} component={NifiInstance}/>
+                    <Route path={`/nifi-images`} component={NifiImageList}/>
+                    <Route path={`/create-nifi-image`} component={NifiImageNew}/>
+                    <Route path={`/nifi-image/:nifiImageId`} component={NifiImage}/>
                 </div>
             </div>
         </div>

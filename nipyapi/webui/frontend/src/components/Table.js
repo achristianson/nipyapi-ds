@@ -4,7 +4,7 @@ import key from "weak-key";
 
 const Table = ({data}) =>
     !data.length ? (
-        <p>Nothing to show</p>
+        <p>No objects</p>
     ) : (
         <table className="table is-striped">
             <thead>

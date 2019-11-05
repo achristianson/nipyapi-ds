@@ -9,4 +9,10 @@ urlpatterns = [
     path('api/k8s-cluster/<int:cluster_id>', views.K8sClusterDetail.as_view()),
     path('api/perform-cloud-ops', views.start_perform_cloud_ops),
     path('api/get-config', views.get_config),
+    path('api/nifi-image', views.NifiImageList.as_view()),
+    path('api/nifi-image/new', views.NifiImageCreate.as_view()),
+    path('api/nifi-image/<int:nifi_image_id>', views.NifiImageDetail.as_view()),
+    path('api/nifi-image-build', views.NifiImageBuildList.as_view()),
+    path('api/nifi-image-build/new', views.NifiImageBuildCreate.as_view()),
+    path('api/nifi-image-build/<int:nifi_image_build_id>', views.NifiImageBuildDetail.as_view()),
 ]

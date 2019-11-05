@@ -1,4 +1,4 @@
-from nifi_web.models import K8sCluster
+from nifi_web.models import K8sCluster, NifiImage, NifiImageBuild
 from nifi_web.models import NifiInstance
 from rest_framework import serializers
 
@@ -6,6 +6,18 @@ from rest_framework import serializers
 class NifiInstanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = NifiInstance
+        fields = '__all__'
+
+
+class NifiImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NifiImage
+        fields = '__all__'
+
+
+class NifiImageBuildSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NifiImageBuild
         fields = '__all__'
 
 

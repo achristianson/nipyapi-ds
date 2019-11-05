@@ -28,6 +28,6 @@ class NifiImage(models.Model):
 
 
 class NifiImageBuild(models.Model):
-    cluster = models.ForeignKey(K8sCluster, on_delete=models.CASCADE)
+    image = models.ForeignKey(NifiImage, on_delete=models.CASCADE)
     state = models.CharField(max_length=100, default='PENDING_BUILD')
     created_at = models.DateTimeField(auto_now_add=True)

@@ -23,3 +23,10 @@ export const NifiInstancesCrumb = () => (
         <li><Link to="/">NiFi Instances</Link></li>
     </React.Fragment>
 );
+
+export const NifiImagesCrumb = () => (
+    <React.Fragment>
+        <AdminCrumb/>
+        <li><Link to="/nifi-images">NiFi Images</Link></li>
+    </React.Fragment>
+);
