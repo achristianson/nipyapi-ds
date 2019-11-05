@@ -13,7 +13,21 @@ class K8sCluster(models.Model):
 
 class NifiInstance(models.Model):
     name = models.CharField(max_length=100)
+    image = models.CharField(max_length=1000, default='apache/nifi:latest')
     hostname = models.CharField(max_length=100)
     state = models.CharField(max_length=100, default='PENDING_CREATE')
     cluster = models.ForeignKey(K8sCluster, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class NifiImage(models.Model):
+    git_repo = models.CharField(max_length=1000)
+    branch = models.CharField(max_length=1000)
+    tag = models.CharField(max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class NifiImageBuild(models.Model):
+    cluster = models.ForeignKey(K8sCluster, on_delete=models.CASCADE)
+    state = models.CharField(max_length=100, default='PENDING_BUILD')
     created_at = models.DateTimeField(auto_now_add=True)
