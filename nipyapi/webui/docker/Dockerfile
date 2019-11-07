@@ -12,6 +12,7 @@ RUN apk add bash \
             build-base \
             nodejs \
             npm \
+            docker \
             wget
 RUN pip3 install -U pip
 ADD requirements.txt /requirements.txt
