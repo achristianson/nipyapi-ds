@@ -2,6 +2,9 @@
 
 set -e
 
+gcloud config set project ${GOOGLE_CLOUD_PROJECT}
+echo "" | gcloud auth configure-docker
+
 cd /opt/nipyapi/nipyapi/webui
 
 python3 manage.py migrate
