@@ -30,4 +30,5 @@ class NifiImage(models.Model):
 class NifiImageBuild(models.Model):
     image = models.ForeignKey(NifiImage, on_delete=models.CASCADE)
     state = models.CharField(max_length=100, default='PENDING_BUILD')
+    docker_id = models.CharField(max_length=1000, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

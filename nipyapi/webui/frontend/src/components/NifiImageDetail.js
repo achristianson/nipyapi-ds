@@ -99,8 +99,9 @@ export class NifiImageDetail extends Component {
                                       render={data => <Table data={data.map(d => {
                                           return {
                                               id: d.id,
-                                              "ID": <Link to={"/nifi-image-build/" + d.id}>{d.id}</Link>,
-                                              "State": d.state
+                                              "Build ID": <Link to={"/nifi-image-build/" + d.id}>{d.id}</Link>,
+                                              "State": d.state,
+                                              "Docker ID": d.docker_id
                                           }
                                       })}/>} ref="provider"/>
 

@@ -10,6 +10,7 @@ from google.cloud import container_v1
 from kubernetes import client
 from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMount, V1StorageClass, V1ObjectMeta, \
     V1SecurityContext, V1Secret, V1Volume, V1ProjectedVolumeSource, V1VolumeProjection, V1SecretProjection, V1KeyToPath
+from nifi_web.docker.img_builder import perform_build_ops_bg
 from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deployment, \
     ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_single_container_statefulset, \
     destroy_statefulset, ensure_storage_class, ensure_secret
@@ -221,6 +222,8 @@ def perform_cloud_ops():
         api_custom,
         domain
     )
+
+    perform_build_ops_bg()
 
 
 def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
