@@ -317,8 +317,8 @@ def destroy_ingress_routed_svc(api_core_v1, api_custom, name):
     )
 
 
-def ensure_single_container_statefulset(api_apps_v1, name, container, volume_paths, replicas=1, init_containers=None,
-                                        volumes=None):
+def ensure_statefulset_with_containers(api_apps_v1, name, containers, volume_paths, replicas=1, init_containers=None,
+                                       volumes=None):
     if volumes is None:
         volumes = []
     if init_containers is None:
@@ -350,7 +350,7 @@ def ensure_single_container_statefulset(api_apps_v1, name, container, volume_pat
             template=V1PodTemplateSpec(
                 metadata=V1ObjectMeta(labels={"app": name}),
                 spec=V1PodSpec(
-                    containers=[container],
+                    containers=containers,
                     volumes=volumes,
                     init_containers=init_containers
                 )

@@ -12,7 +12,7 @@ from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMo
     V1SecurityContext, V1Secret, V1Volume, V1ProjectedVolumeSource, V1VolumeProjection, V1SecretProjection, V1KeyToPath
 from nifi_web.docker.img_builder import perform_build_ops_bg
 from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deployment, \
-    ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_single_container_statefulset, \
+    ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_statefulset_with_containers, \
     destroy_statefulset, ensure_storage_class, ensure_secret
 from nifi_web.k8s.traefik import ensure_traefik
 from nifi_web.models import K8sCluster, NifiInstance
@@ -133,9 +133,6 @@ def perform_cloud_ops():
         oauth_domain,
         oauth_secret
     )
-    volume_paths = [
-        ('data', '/opt/nipyapi/data', '20Gi', 'standard'),
-    ]
 
     with open(os.getenv('GOOGLE_APPLICATION_CREDENTIALS'), 'rb') as f:
         gcloud_credentials_b64 = b64encode(f.read()).decode('UTF-8')
@@ -153,38 +150,69 @@ def perform_cloud_ops():
             }
         )
     )
-    volume_mounts = [V1VolumeMount(name=path[0], mount_path=path[1]) for path in volume_paths]
-    volume_mounts.append(
+    webui_volume_paths = [
+        ('data', '/opt/nipyapi/data', '20Gi', 'standard'),
+    ]
+    webui_volume_mounts = [V1VolumeMount(name=path[0], mount_path=path[1]) for path in webui_volume_paths]
+    webui_volume_mounts.append(
         V1VolumeMount(
             name='webui-credentials',
             mount_path='/root/webui',
             read_only=True
         )
     )
-    ensure_single_container_statefulset(
+
+    dind_volume_paths = [
+        ('docker', '/var/lib/docker', '200Gi', 'standard'),
+    ]
+    dind_volume_mounts = [V1VolumeMount(name=path[0], mount_path=path[1]) for path in dind_volume_paths]
+    shared_volume_mounts = [
+        V1VolumeMount(
+            name='dind-socket',
+            mount_path='/var/run-shared'
+        )
+    ]
+    ensure_statefulset_with_containers(
         api_apps_v1=api_apps_v1,
         name='admin',
         replicas=1,
-        container=V1Container(
-            name='webui',
-            image='aichrist/nipyapi-ds:latest',
-            env=[
-                # FIXME use k8s secrets for these values
-                V1EnvVar(name='DOMAIN', value=domain),
-                V1EnvVar(name='STATIC_IP', value=static_ip),
-                V1EnvVar(name='ADMIN_EMAIL', value=admin_email),
-                V1EnvVar(name='OAUTH_CLIENT_ID', value=oauth_client_id),
-                V1EnvVar(name='OAUTH_CLIENT_SECRET', value=oauth_client_secret),
-                V1EnvVar(name='OAUTH_SECRET', value=oauth_secret),
-                V1EnvVar(name='OAUTH_DOMAIN', value=oauth_domain),
-                V1EnvVar(name='DJANGO_SECRET_KEY', value=django_secret_key),
-                V1EnvVar(name='GOOGLE_APPLICATION_CREDENTIALS', value='/root/webui/gcloud_credentials.json'),
-                V1EnvVar(name='GOOGLE_CLOUD_PROJECT', value=os.getenv('GOOGLE_CLOUD_PROJECT')),
-            ],
-            ports=[V1ContainerPort(container_port=8000)],
-            volume_mounts=volume_mounts
-        ),
+        containers=[
+            V1Container(
+                name='webui',
+                image='aichrist/nipyapi-ds:latest',
+                env=[
+                    # FIXME use k8s secrets for these values
+                    V1EnvVar(name='DOMAIN', value=domain),
+                    V1EnvVar(name='STATIC_IP', value=static_ip),
+                    V1EnvVar(name='ADMIN_EMAIL', value=admin_email),
+                    V1EnvVar(name='OAUTH_CLIENT_ID', value=oauth_client_id),
+                    V1EnvVar(name='OAUTH_CLIENT_SECRET', value=oauth_client_secret),
+                    V1EnvVar(name='OAUTH_SECRET', value=oauth_secret),
+                    V1EnvVar(name='OAUTH_DOMAIN', value=oauth_domain),
+                    V1EnvVar(name='DJANGO_SECRET_KEY', value=django_secret_key),
+                    V1EnvVar(name='GOOGLE_APPLICATION_CREDENTIALS', value='/root/webui/gcloud_credentials.json'),
+                    V1EnvVar(name='CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', value='/root/webui/gcloud_credentials.json'),
+                    V1EnvVar(name='GOOGLE_CLOUD_PROJECT', value=os.getenv('GOOGLE_CLOUD_PROJECT')),
+                    V1EnvVar(name='DOCKER_HOST', value='unix:///var/run-shared/docker.sock'),
+                ],
+                ports=[V1ContainerPort(container_port=8000)],
+                volume_mounts=webui_volume_mounts + shared_volume_mounts
+            ),
+            V1Container(
+                name='dind',
+                image='docker:19-dind',
+                security_context=V1SecurityContext(
+                    privileged=True
+                ),
+                command=['dockerd', '-H', 'unix:///var/run-shared/docker.sock'],
+                volume_mounts=dind_volume_mounts + shared_volume_mounts
+            )
+        ],
         volumes=[
+            V1Volume(
+                name='dind-socket',
+                empty_dir={}
+            ),
             V1Volume(
                 name='webui-credentials',
                 projected=V1ProjectedVolumeSource(
@@ -204,7 +232,7 @@ def perform_cloud_ops():
                 )
             )
         ],
-        volume_paths=volume_paths
+        volume_paths=webui_volume_paths + dind_volume_paths
     )
     ensure_ingress_routed_svc(
         api_core_v1=api_core_v1,
@@ -239,11 +267,11 @@ def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
                 ('provenance-repo', '/opt/nifi/nifi-current/provenance_repository', '20Gi', 'standard'),
                 ('content-repo', '/opt/nifi/nifi-current/content_repository', '20Gi', 'standard'),
             ]
-            ensure_single_container_statefulset(
+            ensure_statefulset_with_containers(
                 api_apps_v1=api_apps_v1,
                 name=instance.hostname,
                 replicas=1,
-                container=V1Container(
+                containers=[V1Container(
                     name='nifi',
                     image='apache/nifi:1.9.2',
                     env=[V1EnvVar(name='NIFI_WEB_HTTP_HOST', value='0.0.0.0')],
@@ -252,7 +280,7 @@ def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
                         name=path[0],
                         mount_path=path[1]
                     ) for path in volume_paths]
-                ),
+                )],
                 init_containers=[
                     V1Container(
                         name='init-permissions',
