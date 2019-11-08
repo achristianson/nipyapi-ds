@@ -7,6 +7,7 @@ import {perform_cloud_ops} from "../util/bg_tasks";
 export class NifiInstanceNew extends Component {
     state = {
         name: "",
+        image: "apache/nifi:latest",
         hostname: "",
         creating: false,
         submitted: false,
@@ -18,6 +19,7 @@ export class NifiInstanceNew extends Component {
         this.setState({creating: true});
         const inst = {
             name: this.state.name,
+            image: this.state.image,
             hostname: this.state.hostname,
             cluster: parseInt(this.state.cluster)
         };
@@ -59,6 +61,19 @@ export class NifiInstanceNew extends Component {
                                     name="name"
                                     onChange={this.handleChange}
                                     value={this.state.name}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="field">
+                            <label className="label">Image</label>
+                            <div className="control">
+                                <input
+                                    className="input"
+                                    type="text"
+                                    name="image"
+                                    onChange={this.handleChange}
+                                    value={this.state.image}
                                     required
                                 />
                             </div>

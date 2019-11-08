@@ -54,6 +54,10 @@ export class NifiInstanceDetail extends Component {
                         <table className="table is-fullwidth">
                             <tbody>
                             <tr>
+                                <td>Image</td>
+                                <td>{this.props.data.image}</td>
+                            </tr>
+                            <tr>
                                 <td>URL</td>
                                 <td><a
                                     target="_blank"
