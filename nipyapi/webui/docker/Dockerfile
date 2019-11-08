@@ -24,6 +24,7 @@ RUN cd /opt && \
     tar xv
 
 RUN ln -s /opt/google-cloud-sdk/bin/gcloud /bin/gcloud
+RUN ln -s /opt/google-cloud-sdk/bin/docker-credential-gcloud /bin/docker-credential-gcloud
 
 RUN pip3 install -U pip
 ADD requirements.txt /requirements.txt
