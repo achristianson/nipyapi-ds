@@ -94,7 +94,7 @@ export class NifiImageDetail extends Component {
 
                         <h4>Builds</h4>
 
-                        <DataProvider endpoint="/api/nifi-image-build"
+                        <DataProvider endpoint={"/api/nifi-image-build?image=" + this.props.data.id}
                                       placeholder={<p>Loading...</p>}
                                       render={data => <Table data={data.map(d => {
                                           return {

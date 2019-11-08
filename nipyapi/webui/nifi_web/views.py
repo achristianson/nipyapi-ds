@@ -53,8 +53,18 @@ class NifiImageDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class NifiImageBuildList(generics.ListAPIView):
-    queryset = NifiImageBuild.objects.all()
     serializer_class = NifiImageBuildSerializer
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned purchases to a given user,
+        by filtering against a `username` query parameter in the URL.
+        """
+        queryset = NifiImageBuild.objects.all()
+        image_id = self.request.query_params.get('image', None)
+        if image_id is not None:
+            queryset = queryset.filter(image=image_id)
+        return queryset
 
 
 class NifiImageBuildCreate(generics.CreateAPIView):
