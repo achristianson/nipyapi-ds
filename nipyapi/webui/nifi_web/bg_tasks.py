@@ -273,7 +273,7 @@ def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
                 replicas=1,
                 containers=[V1Container(
                     name='nifi',
-                    image='apache/nifi:1.9.2',
+                    image=instance.image,
                     env=[V1EnvVar(name='NIFI_WEB_HTTP_HOST', value='0.0.0.0')],
                     ports=[V1ContainerPort(container_port=8080)],
                     volume_mounts=[V1VolumeMount(
