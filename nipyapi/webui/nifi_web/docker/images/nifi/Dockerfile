@@ -19,6 +19,7 @@
 FROM maven:3-jdk-8 AS build
 ARG GIT_REPO
 ARG GIT_BRANCH
+ARG MVN_ARGS
 RUN mkdir -p /usr/local/src && \
     cd /usr/local/src && \
     git clone ${GIT_REPO}
