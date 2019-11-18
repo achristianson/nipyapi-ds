@@ -25,7 +25,7 @@ RUN mkdir -p /usr/local/src && \
 WORKDIR /usr/local/src/nifi
 RUN git fetch --all
 RUN git checkout ${GIT_BRANCH}
-RUN mvn -T$(nproc) -DskipTests=true clean package
+RUN mvn s${MVN_ARGS}
 RUN mv nifi-assembly/target/nifi-*-SNAPSHOT-bin.zip nifi-bin.zip
 RUN mv nifi-toolkit/nifi-toolkit-assembly/target/nifi-toolkit-*-SNAPSHOT-bin.zip nifi-toolkit-bin.zip
 

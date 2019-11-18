@@ -31,7 +31,8 @@ def perform_build_ops():
                 tag=build.image.tag,
                 buildargs={
                     'GIT_REPO': build.image.git_repo,
-                    'GIT_BRANCH': build.image.branch
+                    'GIT_BRANCH': build.image.branch,
+                    'MVN_ARGS': build.image.mvn_build_args
                 }
             )
             logger.info(f'successfully built docker image in {docker_path} with tag {build.image.tag}')

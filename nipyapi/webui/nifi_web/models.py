@@ -23,6 +23,7 @@ class NifiInstance(models.Model):
 class NifiImage(models.Model):
     git_repo = models.CharField(max_length=1000)
     branch = models.CharField(max_length=1000)
+    mvn_build_args = models.CharField(max_length=1000)
     tag = models.CharField(max_length=1000)
     created_at = models.DateTimeField(auto_now_add=True)
 

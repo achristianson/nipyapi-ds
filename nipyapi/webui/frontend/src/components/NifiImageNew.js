@@ -8,6 +8,7 @@ export class NifiImageNew extends Component {
     state = {
         git_repo: "",
         branch: "",
+        mvn_build_args: "-T8 -DskipTests=true clean package",
         tag: ""
     };
 
@@ -17,6 +18,7 @@ export class NifiImageNew extends Component {
         const inst = {
             git_repo: this.state.git_repo,
             branch: this.state.branch,
+            mvn_build_args: this.state.mvn_build_args,
             tag: this.state.tag
         };
         const conf = {
@@ -70,6 +72,19 @@ export class NifiImageNew extends Component {
                                     name="branch"
                                     onChange={this.handleChange}
                                     value={this.state.branch}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="field">
+                            <label className="label">Maven Build Arguments</label>
+                            <div className="control">
+                                <input
+                                    className="input"
+                                    type="text"
+                                    name="mvn_build_args"
+                                    onChange={this.handleChange}
+                                    value={this.state.mvn_build_args}
                                     required
                                 />
                             </div>
