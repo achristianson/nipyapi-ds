@@ -85,6 +85,7 @@ export class NifiImageNew extends Component {
                                     name="mvn_build_args"
                                     onChange={this.handleChange}
                                     value={this.state.mvn_build_args}
+                                    style={{fontFamily: 'monospace'}}
                                     required
                                 />
                             </div>

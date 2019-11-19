@@ -86,6 +86,10 @@ export class NifiImageDetail extends Component {
                                 <td>{this.props.data.branch}</td>
                             </tr>
                             <tr>
+                                <td>Maven Build Arguments</td>
+                                <td style={{fontFamily: 'monospace'}}>{this.props.data.mvn_build_args}</td>
+                            </tr>
+                            <tr>
                                 <td>Docker Image Tag</td>
                                 <td>{this.props.data.tag}</td>
                             </tr>
