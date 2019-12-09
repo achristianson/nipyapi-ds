@@ -21,7 +21,8 @@ export class NifiInstanceNew extends Component {
             name: this.state.name,
             image: this.state.image,
             hostname: this.state.hostname,
-            cluster: parseInt(this.state.cluster)
+            cluster: parseInt(this.state.cluster),
+            namespace: this.state.namespace
         };
         const conf = {
             method: "POST",
@@ -117,6 +118,44 @@ export class NifiInstanceNew extends Component {
                                                               value={el.id}>{el.name}</option>
                                                   ))}/>
                                 </select>
+                            </div>
+                        </div>
+                        <div className="field">
+                            <label className="label">Namespace</label>
+                            <div className="control">
+                                <input
+                                    className="input"
+                                    type="text"
+                                    name="namespace"
+                                    onChange={this.handleChange}
+                                    value={this.state.namespace}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="field"><strong>Datastores</strong></div   >
+                        <div className="field">
+                            <div>
+                                <label className="checkbox">
+                                    <input type="checkbox"/>
+                                    {` `}Deploy Mongo
+                                </label>
+                            </div>
+                        </div>
+                        <div className="field">
+                            <div>
+                                <label className="checkbox">
+                                    <input type="checkbox"/>
+                                    {` `}Deploy Kafka
+                                </label>
+                            </div>
+                        </div>
+                        <div className="field">
+                            <div>
+                                <label className="checkbox">
+                                    <input type="checkbox"/>
+                                    {` `}Deploy Prometheus
+                                </label>
                             </div>
                         </div>
                         <div className="control">

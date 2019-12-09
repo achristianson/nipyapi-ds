@@ -15,6 +15,7 @@ class NifiInstance(models.Model):
     name = models.CharField(max_length=100)
     image = models.CharField(max_length=1000, default='apache/nifi:latest')
     hostname = models.CharField(max_length=100)
+    namespace = models.CharField(max_length=100)
     state = models.CharField(max_length=100, default='PENDING_CREATE')
     cluster = models.ForeignKey(K8sCluster, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

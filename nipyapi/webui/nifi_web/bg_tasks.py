@@ -13,7 +13,7 @@ from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMo
 from nifi_web.docker.img_builder import perform_build_ops_bg
 from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deployment, \
     ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_statefulset_with_containers, \
-    destroy_statefulset, ensure_storage_class, ensure_secret
+    destroy_statefulset, ensure_storage_class, ensure_secret, ensure_namespace, destroy_namespace
 from nifi_web.k8s.traefik import ensure_traefik
 from nifi_web.models import K8sCluster, NifiInstance
 
@@ -175,6 +175,7 @@ def perform_cloud_ops():
     ensure_statefulset_with_containers(
         api_apps_v1=api_apps_v1,
         name='admin',
+        namespace='default',
         replicas=1,
         containers=[
             V1Container(
@@ -191,7 +192,8 @@ def perform_cloud_ops():
                     V1EnvVar(name='OAUTH_DOMAIN', value=oauth_domain),
                     V1EnvVar(name='DJANGO_SECRET_KEY', value=django_secret_key),
                     V1EnvVar(name='GOOGLE_APPLICATION_CREDENTIALS', value='/root/webui/gcloud_credentials.json'),
-                    V1EnvVar(name='CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE', value='/root/webui/gcloud_credentials.json'),
+                    V1EnvVar(name='CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE',
+                             value='/root/webui/gcloud_credentials.json'),
                     V1EnvVar(name='GOOGLE_CLOUD_PROJECT', value=os.getenv('GOOGLE_CLOUD_PROJECT')),
                     V1EnvVar(name='DOCKER_HOST', value='unix:///var/run-shared/docker.sock'),
                 ],
@@ -239,6 +241,7 @@ def perform_cloud_ops():
         api_custom=api_custom,
         domain=domain,
         name='admin',
+        namespace='default',
         port_name='web',
         svc_port=80,
         target_port=8000
@@ -255,12 +258,49 @@ def perform_cloud_ops():
 
 
 def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
+    create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain)
+    destroy_nifi_instances(api_apps_v1, api_core_v1, api_custom)
+
+
+def destroy_nifi_instances(api_apps_v1, api_core_v1, api_custom):
+    for instance in NifiInstance.objects.filter(state='PENDING_DESTROY'):
+        instance.state = 'DESTROYING'
+        instance.save()
+        instance.state = 'DESTROY_FAILED'
+        try:
+            destroy_statefulset(
+                api_apps_v1,
+                api_core_v1,
+                namespace=instance.namespace,
+                name=instance.hostname
+            )
+            destroy_ingress_routed_svc(
+                api_core_v1=api_core_v1,
+                api_custom=api_custom,
+                name=instance.hostname,
+                namespace=instance.namespace
+            )
+            destroy_namespace(api_core_v1, instance.namespace)
+            instance.state = 'DESTROYED'
+        finally:
+            instance.save()
+
+
+def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
     for instance in NifiInstance.objects.filter(state='PENDING_CREATE'):
         instance.state = 'CREATING'
         instance.save()
         port_name = 'web'
         instance.state = 'CREATE_FAILED'
         try:
+            namespace = 'default'
+
+            if instance.namespace is not None and instance.namespace != 'default':
+                namespace = instance.namespace
+                ensure_namespace(api_core_v1, namespace)
+            else:
+                instance.namespace = 'default'
+
             volume_paths = [
                 ('db-repo', '/opt/nifi/nifi-current/database_repository', '20Gi', 'standard'),
                 ('flowfile-repo', '/opt/nifi/nifi-current/flowfile_repository', '20Gi', 'standard'),
@@ -270,6 +310,7 @@ def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
             ensure_statefulset_with_containers(
                 api_apps_v1=api_apps_v1,
                 name=instance.hostname,
+                namespace=namespace,
                 replicas=1,
                 containers=[V1Container(
                     name='nifi',
@@ -299,29 +340,11 @@ def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
                 api_custom=api_custom,
                 domain=domain,
                 name=instance.hostname,
+                namespace=namespace,
                 port_name=port_name,
                 svc_port=80,
                 target_port=8080
             )
             instance.state = 'RUNNING'
-        finally:
-            instance.save()
-    for instance in NifiInstance.objects.filter(state='PENDING_DESTROY'):
-        instance.state = 'DESTROYING'
-        instance.save()
-        instance.state = 'DESTROY_FAILED'
-        try:
-            destroy_statefulset(
-                api_apps_v1,
-                api_core_v1,
-                namespace='default',
-                name=instance.hostname
-            )
-            destroy_ingress_routed_svc(
-                api_core_v1=api_core_v1,
-                api_custom=api_custom,
-                name=instance.hostname
-            )
-            instance.state = 'DESTROYED'
         finally:
             instance.save()

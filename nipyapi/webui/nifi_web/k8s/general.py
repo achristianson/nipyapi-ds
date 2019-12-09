@@ -63,6 +63,19 @@ def ensure_deployment(api: client.AppsV1Api, deployment, namespace, name):
         logger.info(f'Deployment exists: {namespace}/{name}')
 
 
+def ensure_namespace(api: client.CoreV1Api, namespace):
+    if len(api.list_namespace(field_selector=f'metadata.name={namespace}').items) == 0:
+        logger.info(f'creating namespace: {namespace}')
+        body = client.V1Namespace(
+            metadata=V1ObjectMeta(name=namespace)
+        )
+        api.create_namespace(
+            body=body
+        )
+    else:
+        logger.info(f'namespace exists: {namespace}')
+
+
 def ensure_statefulset(api: client.AppsV1Api, stateful_set, namespace, name):
     if len(api.list_namespaced_stateful_set(namespace=namespace,
                                             field_selector=f'metadata.name={name}').items) == 0:
@@ -92,7 +105,7 @@ def destroy_statefulset(api: client.AppsV1Api, core_api: client.CoreV1Api, names
                                                                 label_selector=f'app={name}').items:
         core_api.delete_namespaced_persistent_volume_claim(
             name=pvc.metadata.name,
-            namespace='default'
+            namespace=namespace
         )
     if len(api.list_namespaced_stateful_set(namespace=namespace,
                                             field_selector=f'metadata.name={name}').items) == 1:
@@ -127,6 +140,16 @@ def destroy_service(api: client.CoreV1Api, namespace, name):
         )
     else:
         logger.info(f'cannot find Service to destroy: {namespace}/{name}')
+
+
+def destroy_namespace(api: client.CoreV1Api, name):
+    if len(api.list_namespace(field_selector=f'metadata.name={name}').items) == 1:
+        logger.info(f'destroying namespace: {name}')
+        api.delete_namespace(
+            name=name
+        )
+    else:
+        logger.info(f'cannot find namespace to destroy: {name}')
 
 
 def ensure_service_account(api: client.CoreV1Api, account, name, namespace):
@@ -237,7 +260,14 @@ def ensure_single_container_deployment(api_apps_v1, container, name, replicas=1)
     )
 
 
-def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, svc_port, target_port):
+def ensure_ingress_routed_svc(api_core_v1: client.CoreV1Api,
+                              api_custom: client.CustomObjectsApi,
+                              domain,
+                              name,
+                              namespace,
+                              port_name,
+                              svc_port,
+                              target_port):
     ensure_service(
         api=api_core_v1,
         service=V1Service(
@@ -255,11 +285,13 @@ def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 
                         target_port=target_port
                     ),
                 ],
-                selector={'app': name}
+                selector={
+                    'app': name
+                }
             )
         ),
         name=name,
-        namespace='default'
+        namespace=namespace
     )
     ensure_custom_object(
         api=api_custom,
@@ -284,7 +316,10 @@ def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 
                             }
                         ],
                         'middlewares': [
-                            {'name': 'traefik-forward-auth'}
+                            {
+                                'name': 'traefik-forward-auth',
+                                'namespace': 'default'
+                            }
                         ]
                     }
                 ],
@@ -297,15 +332,15 @@ def ensure_ingress_routed_svc(api_core_v1, api_custom, domain, name, port_name, 
         plural='ingressroutes',
         version='v1alpha1',
         name=name,
-        namespace='default'
+        namespace=namespace
     )
 
 
-def destroy_ingress_routed_svc(api_core_v1, api_custom, name):
+def destroy_ingress_routed_svc(api_core_v1, api_custom, name, namespace):
     destroy_service(
         api=api_core_v1,
         name=name,
-        namespace='default'
+        namespace=namespace
     )
     destroy_custom_object(
         api=api_custom,
@@ -313,11 +348,17 @@ def destroy_ingress_routed_svc(api_core_v1, api_custom, name):
         plural='ingressroutes',
         version='v1alpha1',
         name=name,
-        namespace='default'
+        namespace=namespace
     )
 
 
-def ensure_statefulset_with_containers(api_apps_v1, name, containers, volume_paths, replicas=1, init_containers=None,
+def ensure_statefulset_with_containers(api_apps_v1,
+                                       name,
+                                       namespace,
+                                       containers,
+                                       volume_paths,
+                                       replicas=1,
+                                       init_containers=None,
                                        volumes=None):
     if volumes is None:
         volumes = []
@@ -362,6 +403,6 @@ def ensure_statefulset_with_containers(api_apps_v1, name, containers, volume_pat
     ensure_statefulset(
         api_apps_v1,
         stateful_set=ss,
-        namespace='default',
+        namespace=namespace,
         name=name
     )
