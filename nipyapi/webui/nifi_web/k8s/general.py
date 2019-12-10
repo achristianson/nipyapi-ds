@@ -228,7 +228,7 @@ def ensure_crd(api, name, group, kind, plural, singular, scope):
         logger.info(f'CustomResourceDefinition exists: {name}')
 
 
-def ensure_single_container_deployment(api_apps_v1, container, name, replicas=1):
+def ensure_single_container_deployment(api_apps_v1, container, name, namespace, replicas=1):
     ensure_deployment(
         api=api_apps_v1,
         deployment=V1Deployment(
@@ -256,14 +256,16 @@ def ensure_single_container_deployment(api_apps_v1, container, name, replicas=1)
             )
         ),
         name=name,
-        namespace='default'
+        namespace=namespace
     )
 
 
 def ensure_ingress_routed_svc(api_core_v1: client.CoreV1Api,
                               api_custom: client.CustomObjectsApi,
                               domain,
+                              hostname,
                               name,
+                              target_name,
                               namespace,
                               port_name,
                               svc_port,
@@ -286,7 +288,7 @@ def ensure_ingress_routed_svc(api_core_v1: client.CoreV1Api,
                     ),
                 ],
                 selector={
-                    'app': name
+                    'app': target_name
                 }
             )
         ),
@@ -307,7 +309,7 @@ def ensure_ingress_routed_svc(api_core_v1: client.CoreV1Api,
                 ],
                 'routes': [
                     {
-                        'match': f'Host(`{name}.{domain}`)',
+                        'match': f'Host(`{hostname}.{domain}`)',
                         'kind': 'Rule',
                         'services': [
                             {
@@ -331,7 +333,7 @@ def ensure_ingress_routed_svc(api_core_v1: client.CoreV1Api,
         group='traefik.containo.us',
         plural='ingressroutes',
         version='v1alpha1',
-        name=name,
+        name=hostname,
         namespace=namespace
     )
 

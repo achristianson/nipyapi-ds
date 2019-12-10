@@ -351,12 +351,15 @@ def ensure_whoami(api_apps_v1, api_core_v1, api_custom, domain):
             image='containous/whoami',
             ports=[V1ContainerPort(name=port_name,
                                    container_port=8000)]),
-        name
+        name,
+        'default'
     )
     ensure_ingress_routed_svc(
         api_core_v1,
         api_custom,
         domain,
+        name,
+        name,
         name,
         'default',
         port_name,

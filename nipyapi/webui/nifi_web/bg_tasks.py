@@ -9,11 +9,13 @@ from background_task import background
 from google.cloud import container_v1
 from kubernetes import client
 from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMount, V1StorageClass, V1ObjectMeta, \
-    V1SecurityContext, V1Secret, V1Volume, V1ProjectedVolumeSource, V1VolumeProjection, V1SecretProjection, V1KeyToPath
+    V1SecurityContext, V1Secret, V1Volume, V1ProjectedVolumeSource, V1VolumeProjection, V1SecretProjection, V1KeyToPath, \
+    V1Service, V1ServiceSpec, V1ServicePort
 from nifi_web.docker.img_builder import perform_build_ops_bg
 from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deployment, \
     ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_statefulset_with_containers, \
-    destroy_statefulset, ensure_storage_class, ensure_secret, ensure_namespace, destroy_namespace
+    destroy_statefulset, ensure_storage_class, ensure_secret, ensure_namespace, destroy_namespace, ensure_service, \
+    destroy_service
 from nifi_web.k8s.traefik import ensure_traefik
 from nifi_web.models import K8sCluster, NifiInstance
 
@@ -240,7 +242,9 @@ def perform_cloud_ops():
         api_core_v1=api_core_v1,
         api_custom=api_custom,
         domain=domain,
+        hostname='admin',
         name='admin',
+        target_name='admin',
         namespace='default',
         port_name='web',
         svc_port=80,
@@ -280,6 +284,59 @@ def destroy_nifi_instances(api_apps_v1, api_core_v1, api_custom):
                 name=instance.hostname,
                 namespace=instance.namespace
             )
+            destroy_statefulset(
+                api_apps_v1,
+                api_core_v1,
+                namespace=instance.namespace,
+                name='mongo'
+            )
+            destroy_service(
+                api_core_v1,
+                namespace=instance.namespace,
+                name='mongo'
+            )
+            destroy_deployment(
+                api_apps_v1,
+                namespace=instance.namespace,
+                name='mongo-express'
+            )
+            destroy_ingress_routed_svc(
+                api_core_v1=api_core_v1,
+                api_custom=api_custom,
+                name='mongo-' + instance.hostname,
+                namespace=instance.namespace
+            )
+            destroy_deployment(
+                api_apps_v1,
+                namespace=instance.namespace,
+                name='zookeeper'
+            )
+            destroy_service(
+                api_core_v1,
+                namespace=instance.namespace,
+                name='zookeeper'
+            )
+            destroy_deployment(
+                api_apps_v1,
+                namespace=instance.namespace,
+                name='kafka'
+            )
+            destroy_service(
+                api_core_v1,
+                namespace=instance.namespace,
+                name='kafka'
+            )
+            destroy_deployment(
+                api_apps_v1,
+                namespace=instance.namespace,
+                name='prometheus'
+            )
+            destroy_ingress_routed_svc(
+                api_core_v1=api_core_v1,
+                api_custom=api_custom,
+                name='prometheus-' + instance.hostname,
+                namespace=instance.namespace
+            )
             destroy_namespace(api_core_v1, instance.namespace)
             instance.state = 'DESTROYED'
         finally:
@@ -301,7 +358,8 @@ def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
             else:
                 instance.namespace = 'default'
 
-            volume_paths = [
+            # deploy nifi
+            nifi_volume_paths = [
                 ('db-repo', '/opt/nifi/nifi-current/database_repository', '20Gi', 'standard'),
                 ('flowfile-repo', '/opt/nifi/nifi-current/flowfile_repository', '20Gi', 'standard'),
                 ('provenance-repo', '/opt/nifi/nifi-current/provenance_repository', '20Gi', 'standard'),
@@ -320,7 +378,7 @@ def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
                     volume_mounts=[V1VolumeMount(
                         name=path[0],
                         mount_path=path[1]
-                    ) for path in volume_paths]
+                    ) for path in nifi_volume_paths]
                 )],
                 init_containers=[
                     V1Container(
@@ -330,21 +388,204 @@ def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
                         volume_mounts=[V1VolumeMount(
                             name=path[0],
                             mount_path=path[1]
-                        ) for path in volume_paths]
+                        ) for path in nifi_volume_paths]
                     )
                 ],
-                volume_paths=volume_paths
+                volume_paths=nifi_volume_paths
             )
             ensure_ingress_routed_svc(
                 api_core_v1=api_core_v1,
                 api_custom=api_custom,
                 domain=domain,
+                hostname=instance.hostname,
                 name=instance.hostname,
+                target_name=instance.hostname,
                 namespace=namespace,
                 port_name=port_name,
                 svc_port=80,
                 target_port=8080
             )
+
+            # deploy mongo
+            if instance.deploy_mongo:
+                mongo_volume_paths = [
+                    ('db', '/data/db', '20Gi', 'standard'),
+                ]
+                ensure_statefulset_with_containers(
+                    api_apps_v1=api_apps_v1,
+                    name='mongo',
+                    namespace=namespace,
+                    replicas=1,
+                    containers=[V1Container(
+                        name='mongo',
+                        image='mongo',
+                        env=[
+                            V1EnvVar(name='MONGO_INITDB_ROOT_USERNAME', value='admin'),
+                            V1EnvVar(name='MONGO_INITDB_ROOT_PASSWORD', value='admin')
+                        ],
+                        ports=[V1ContainerPort(name='mongo', container_port=27017)],
+                        volume_mounts=[V1VolumeMount(
+                            name=path[0],
+                            mount_path=path[1]
+                        ) for path in mongo_volume_paths]
+                    )],
+                    volume_paths=mongo_volume_paths
+                )
+                ensure_service(
+                    api=api_core_v1,
+                    service=V1Service(
+                        api_version="v1",
+                        metadata=V1ObjectMeta(
+                            name='mongo'
+                        ),
+                        spec=V1ServiceSpec(
+                            type='ClusterIP',
+                            ports=[
+                                V1ServicePort(
+                                    protocol='TCP',
+                                    port=27017,
+                                    name='mongo',
+                                    target_port=27017
+                                ),
+                            ],
+                            selector={
+                                'app': 'mongo'
+                            }
+                        )
+                    ),
+                    name='mongo',
+                    namespace=namespace
+                )
+                ensure_single_container_deployment(
+                    api_apps_v1,
+                    V1Container(
+                        name='mongo-express',
+                        image='mongo-express',
+                        env=[
+                            V1EnvVar(name='ME_CONFIG_MONGODB_ADMINUSERNAME', value='admin'),
+                            V1EnvVar(name='ME_CONFIG_MONGODB_ADMINPASSWORD', value='admin')
+                        ],
+                        ports=[V1ContainerPort(container_port=8000)]),
+                    'mongo-express',
+                    instance.namespace
+                )
+                ensure_ingress_routed_svc(
+                    api_core_v1=api_core_v1,
+                    api_custom=api_custom,
+                    domain=domain,
+                    hostname="mongo-" + instance.hostname,
+                    name="mongo-" + instance.hostname,
+                    target_name="mongo-express",
+                    namespace=namespace,
+                    port_name=port_name,
+                    svc_port=80,
+                    target_port=8081
+                )
+
+            if instance.deploy_kafka:
+                # deploy zookeeper
+                ensure_single_container_deployment(
+                    api_apps_v1,
+                    V1Container(
+                        name='zookeeper',
+                        image='wurstmeister/zookeeper',
+                        env=[],
+                        ports=[V1ContainerPort(container_port=2181)]),
+                    'zookeeper',
+                    instance.namespace
+                )
+                ensure_service(
+                    api=api_core_v1,
+                    service=V1Service(
+                        api_version="v1",
+                        metadata=V1ObjectMeta(
+                            name='zookeeper'
+                        ),
+                        spec=V1ServiceSpec(
+                            type='ClusterIP',
+                            ports=[
+                                V1ServicePort(
+                                    protocol='TCP',
+                                    port=2181,
+                                    name='zookeeper',
+                                    target_port=2181
+                                ),
+                            ],
+                            selector={
+                                'app': 'zookeeper'
+                            }
+                        )
+                    ),
+                    name='zookeeper',
+                    namespace=namespace
+                )
+
+                # deploy kafka
+                ensure_single_container_deployment(
+                    api_apps_v1,
+                    V1Container(
+                        name='kafka',
+                        image='wurstmeister/kafka',
+                        env=[
+                            V1EnvVar(name='KAFKA_ADVERTISED_HOST_NAME', value='kafka'),
+                            V1EnvVar(name='KAFKA_ZOOKEEPER_CONNECT', value='zookeeper:2181'),
+                            V1EnvVar(name='KAFKA_PORT', value='9092')
+                        ],
+                        ports=[V1ContainerPort(container_port=9092)]),
+                    'kafka',
+                    instance.namespace
+                )
+                ensure_service(
+                    api=api_core_v1,
+                    service=V1Service(
+                        api_version="v1",
+                        metadata=V1ObjectMeta(
+                            name='kafka'
+                        ),
+                        spec=V1ServiceSpec(
+                            type='ClusterIP',
+                            ports=[
+                                V1ServicePort(
+                                    protocol='TCP',
+                                    port=9092,
+                                    name='kafka',
+                                    target_port=9092
+                                ),
+                            ],
+                            selector={
+                                'app': 'kafka'
+                            }
+                        )
+                    ),
+                    name='kafka',
+                    namespace=namespace
+                )
+
+            if instance.deploy_prometheus:
+                # deploy prometheus
+                ensure_single_container_deployment(
+                    api_apps_v1,
+                    V1Container(
+                        name='prometheus',
+                        image='prom/prometheus',
+                        env=[],
+                        ports=[V1ContainerPort(container_port=9090)]),
+                    'prometheus',
+                    instance.namespace
+                )
+                ensure_ingress_routed_svc(
+                    api_core_v1=api_core_v1,
+                    api_custom=api_custom,
+                    domain=domain,
+                    hostname="prometheus-" + instance.hostname,
+                    name="prometheus",
+                    target_name="prometheus",
+                    namespace=namespace,
+                    port_name=port_name,
+                    svc_port=9090,
+                    target_port=9090
+                )
+
             instance.state = 'RUNNING'
         finally:
             instance.save()

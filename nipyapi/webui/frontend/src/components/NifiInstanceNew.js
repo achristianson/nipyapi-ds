@@ -9,6 +9,10 @@ export class NifiInstanceNew extends Component {
         name: "",
         image: "apache/nifi:latest",
         hostname: "",
+        namespace: "",
+        deploy_mongo: false,
+        deploy_kafka: false,
+        deploy_prometheus: false,
         creating: false,
         submitted: false,
         cluster: 0
@@ -22,7 +26,10 @@ export class NifiInstanceNew extends Component {
             image: this.state.image,
             hostname: this.state.hostname,
             cluster: parseInt(this.state.cluster),
-            namespace: this.state.namespace
+            namespace: this.state.namespace,
+            deploy_mongo: this.state.deploy_mongo,
+            deploy_kafka: this.state.deploy_kafka,
+            deploy_prometheus: this.state.deploy_prometheus
         };
         const conf = {
             method: "POST",
@@ -37,7 +44,17 @@ export class NifiInstanceNew extends Component {
     };
 
     handleChange = e => {
-        this.setState({[e.target.name]: e.target.value});
+        if (e.target.name === "deploy_mongo" ||
+            e.target.name === "deploy_kafka" ||
+            e.target.name === "deploy_prometheus") {
+            if (e.target.checked) {
+                this.setState({[e.target.name]: true});
+            } else {
+                this.setState({[e.target.name]: false});
+            }
+        } else {
+            this.setState({[e.target.name]: e.target.value});
+        }
     };
 
     render() {
@@ -133,11 +150,14 @@ export class NifiInstanceNew extends Component {
                                 />
                             </div>
                         </div>
-                        <div className="field"><strong>Datastores</strong></div   >
+                        <div className="field"><strong>Datastores</strong></div>
                         <div className="field">
                             <div>
                                 <label className="checkbox">
-                                    <input type="checkbox"/>
+                                    <input type="checkbox"
+                                           name="deploy_mongo"
+                                           checked={this.state.deploy_mongo}
+                                           onChange={this.handleChange}/>
                                     {` `}Deploy Mongo
                                 </label>
                             </div>
@@ -145,7 +165,10 @@ export class NifiInstanceNew extends Component {
                         <div className="field">
                             <div>
                                 <label className="checkbox">
-                                    <input type="checkbox"/>
+                                    <input type="checkbox"
+                                           name="deploy_kafka"
+                                           checked={this.state.deploy_kafka}
+                                           onChange={this.handleChange}/>
                                     {` `}Deploy Kafka
                                 </label>
                             </div>
@@ -153,7 +176,10 @@ export class NifiInstanceNew extends Component {
                         <div className="field">
                             <div>
                                 <label className="checkbox">
-                                    <input type="checkbox"/>
+                                    <input type="checkbox"
+                                           name="deploy_prometheus"
+                                           checked={this.state.deploy_prometheus}
+                                           onChange={this.handleChange}/>
                                     {` `}Deploy Prometheus
                                 </label>
                             </div>
