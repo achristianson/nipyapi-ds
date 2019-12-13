@@ -337,7 +337,8 @@ def destroy_nifi_instances(api_apps_v1, api_core_v1, api_custom):
                 name='prometheus-' + instance.hostname,
                 namespace=instance.namespace
             )
-            destroy_namespace(api_core_v1, instance.namespace)
+            if instance.namespace != "default":
+                destroy_namespace(api_core_v1, instance.namespace)
             instance.state = 'DESTROYED'
         finally:
             instance.save()
