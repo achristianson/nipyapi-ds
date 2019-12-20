@@ -157,6 +157,23 @@ export class NifiInstanceDetail extends Component {
                                     <td>Prometheus</td>
                                     <td>Not deployed</td>
                                 </tr>}
+                            {this.props.data.deploy_jupyter ?
+                                <React.Fragment>
+                                    <tr>
+                                        <td>Jupyter Notebook Data Science Stack</td>
+                                        <td>
+                                            <a
+                                                target="_blank"
+                                                href={"https://jupyter-" + this.props.data.hostname + "." + window.nifi_web_config.domain + "/?token=" + this.props.data.jupyter_token}>
+                                                {"https://jupyter-" + this.props.data.hostname + "." + window.nifi_web_config.domain}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </React.Fragment> :
+                                <tr>
+                                    <td>Jupyter Notebook Data Science Stack</td>
+                                    <td>Not deployed</td>
+                                </tr>}
                             <tr>
                                 <td>State</td>
                                 <td>{this.props.data.state}</td>

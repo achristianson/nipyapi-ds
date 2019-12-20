@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import uuid
 from base64 import b64encode
 
 import google.auth
@@ -337,6 +338,17 @@ def destroy_nifi_instances(api_apps_v1, api_core_v1, api_custom):
                 name='prometheus-' + instance.hostname,
                 namespace=instance.namespace
             )
+            destroy_deployment(
+                api_apps_v1,
+                namespace=instance.namespace,
+                name='jupyter'
+            )
+            destroy_ingress_routed_svc(
+                api_core_v1=api_core_v1,
+                api_custom=api_custom,
+                name='jupyter-' + instance.hostname,
+                namespace=instance.namespace
+            )
             if instance.namespace != "default":
                 destroy_namespace(api_core_v1, instance.namespace)
             instance.state = 'DESTROYED'
@@ -585,6 +597,33 @@ def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
                     port_name=port_name,
                     svc_port=9090,
                     target_port=9090
+                )
+
+            if instance.deploy_jupyter:
+                # deploy jupyter
+                instance.jupyter_token = str(uuid.uuid1())
+                ensure_single_container_deployment(
+                    api_apps_v1,
+                    V1Container(
+                        name='jupyter',
+                        image='jupyter/datascience-notebook',
+                        command=['start-notebook.sh', '--NotebookApp.token=' + instance.jupyter_token],
+                        env=[],
+                        ports=[V1ContainerPort(container_port=8888)]),
+                    'jupyter',
+                    instance.namespace
+                )
+                ensure_ingress_routed_svc(
+                    api_core_v1=api_core_v1,
+                    api_custom=api_custom,
+                    domain=domain,
+                    hostname="jupyter-" + instance.hostname,
+                    name="jupyter",
+                    target_name="jupyter",
+                    namespace=namespace,
+                    port_name=port_name,
+                    svc_port=8888,
+                    target_port=8888
                 )
 
             instance.state = 'RUNNING'

@@ -13,6 +13,7 @@ export class NifiInstanceNew extends Component {
         deploy_mongo: false,
         deploy_kafka: false,
         deploy_prometheus: false,
+        deploy_jupyter: false,
         creating: false,
         submitted: false,
         cluster: 0
@@ -29,7 +30,8 @@ export class NifiInstanceNew extends Component {
             namespace: this.state.namespace,
             deploy_mongo: this.state.deploy_mongo,
             deploy_kafka: this.state.deploy_kafka,
-            deploy_prometheus: this.state.deploy_prometheus
+            deploy_prometheus: this.state.deploy_prometheus,
+            deploy_jupyter: this.state.deploy_jupyter
         };
         const conf = {
             method: "POST",
@@ -46,7 +48,8 @@ export class NifiInstanceNew extends Component {
     handleChange = e => {
         if (e.target.name === "deploy_mongo" ||
             e.target.name === "deploy_kafka" ||
-            e.target.name === "deploy_prometheus") {
+            e.target.name === "deploy_prometheus" ||
+            e.target.name === "deploy_jupyter") {
             if (e.target.checked) {
                 this.setState({[e.target.name]: true});
             } else {
@@ -150,7 +153,7 @@ export class NifiInstanceNew extends Component {
                                 />
                             </div>
                         </div>
-                        <div className="field"><strong>Datastores</strong></div>
+                        <div className="field"><strong>Additional Components</strong></div>
                         <div className="field">
                             <div>
                                 <label className="checkbox">
@@ -181,6 +184,17 @@ export class NifiInstanceNew extends Component {
                                            checked={this.state.deploy_prometheus}
                                            onChange={this.handleChange}/>
                                     {` `}Deploy Prometheus
+                                </label>
+                            </div>
+                        </div>
+                        <div className="field">
+                            <div>
+                                <label className="checkbox">
+                                    <input type="checkbox"
+                                           name="deploy_jupyter"
+                                           checked={this.state.deploy_jupyter}
+                                           onChange={this.handleChange}/>
+                                    {` `}Deploy Jupyter Notebook Data Science Stack
                                 </label>
                             </div>
                         </div>

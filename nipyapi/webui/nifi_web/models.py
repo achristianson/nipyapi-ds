@@ -19,6 +19,8 @@ class NifiInstance(models.Model):
     deploy_mongo = models.BooleanField(default=False)
     deploy_kafka = models.BooleanField(default=False)
     deploy_prometheus = models.BooleanField(default=False)
+    deploy_jupyter = models.BooleanField(default=False)
+    jupyter_token = models.CharField(max_length=1000, null=True)
     state = models.CharField(max_length=100, default='PENDING_CREATE')
     cluster = models.ForeignKey(K8sCluster, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
