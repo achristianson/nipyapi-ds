@@ -251,6 +251,53 @@ def perform_cloud_ops():
         svc_port=80,
         target_port=8000
     )
+    reg_volume_paths = [
+        ('database', '/opt/nifi-registry/nifi-registry-current/database', '10Gi', 'standard'),
+        ('flow-storage', '/opt/nifi-registry/nifi-registry-current/flow_storage', '20Gi', 'standard'),
+    ]
+    reg_volume_mounts = [V1VolumeMount(name=path[0], mount_path=path[1]) for path in reg_volume_paths]
+    ensure_statefulset_with_containers(
+        api_apps_v1=api_apps_v1,
+        name='registry',
+        namespace='default',
+        replicas=1,
+        containers=[
+            V1Container(
+                name='registry',
+                image='apache/nifi-registry:latest',
+                env=[
+                    V1EnvVar(name='NIFI_REGISTRY_WEB_HTTP_PORT', value='19090'),
+                ],
+                ports=[V1ContainerPort(container_port=19090)],
+                volume_mounts=reg_volume_mounts
+            ),
+        ],
+        init_containers=[
+            V1Container(
+                name='init-permissions',
+                image='busybox',
+                command=['sh', '-c', 'chown -R 1000:1000 /opt/nifi-registry/nifi-registry-current'],
+                volume_mounts=[V1VolumeMount(
+                    name=path[0],
+                    mount_path=path[1]
+                ) for path in reg_volume_paths]
+            )
+        ],
+        volumes=[],
+        volume_paths=reg_volume_paths
+    )
+    ensure_ingress_routed_svc(
+        api_core_v1=api_core_v1,
+        api_custom=api_custom,
+        domain=domain,
+        hostname='registry',
+        name='registry',
+        target_name='registry',
+        namespace='default',
+        port_name='web',
+        svc_port=80,
+        target_port=19090
+    )
 
     perform_nifi_ops(
         api_apps_v1,
