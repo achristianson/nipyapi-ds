@@ -7,67 +7,96 @@ import {NifiInstance, NifiInstanceList} from "./NifiInstanceList";
 import {NifiImage, NifiImageList} from "./NifiImageList";
 import {NifiImageNew} from "./NifiImageNew";
 
-const App = () => (
-    <React.Fragment>
-        <nav className="navbar is-white">
-            <div className="container">
-                <div className="navbar-brand">
-                    <a className="navbar-item brand-text" href="../">
-                        Admin
-                    </a>
-                </div>
-                {/*<div id="navMenu" className="navbar-menu">*/}
-                {/*    <div className="navbar-start">*/}
-                {/*        <a className="navbar-item" href="admin.html">*/}
-                {/*            Home*/}
-                {/*        </a>*/}
-                {/*        <a className="navbar-item" href="admin.html">*/}
-                {/*            Orders*/}
-                {/*        </a>*/}
-                {/*        <a className="navbar-item" href="admin.html">*/}
-                {/*            Payments*/}
-                {/*        </a>*/}
-                {/*        <a className="navbar-item" href="admin.html">*/}
-                {/*            Exceptions*/}
-                {/*        </a>*/}
-                {/*    </div>*/}
-                {/*</div>*/}
-            </div>
-        </nav>
+class App extends React.Component {
 
-        <div className="container">
-            <div className="columns">
-                <div className="column is-3 ">
-                    <aside className="menu">
-                        <p className="menu-label">
-                            General
-                        </p>
-                        <ul className="menu-list">
-                            <li><NavLink to="/" exact={true} activeClassName="is-active">NiFi Instances</NavLink></li>
-                            <li><NavLink to="/nifi-images" activeClassName="is-active">NiFi Images</NavLink></li>
-                            <li><a>Kubernetes</a></li>
-                        </ul>
-                        <p className="menu-label">
-                            Debug
-                        </p>
-                        <ul className="menu-list">
-                            <li><a>Events</a></li>
-                        </ul>
-                    </aside>
-                </div>
-                <div className="column is-9">
-                    <Route exact path="/" component={NifiInstanceList}/>
-                    <Route path={`/create_nifi`} component={NifiInstanceNew}/>
-                    <Route path={`/nifi/:nifiInstanceId`} component={NifiInstance}/>
-                    <Route path={`/nifi-images`} component={NifiImageList}/>
-                    <Route path={`/create-nifi-image`} component={NifiImageNew}/>
-                    <Route path={`/nifi-image/:nifiImageId`} component={NifiImage}/>
-                </div>
-            </div>
-        </div>
+    state = {
+        config: [],
+        loaded: false,
+        placeholder: <p>Loading...</p>
+    };
 
-    </React.Fragment>
-);
+    refresh() {
+        fetch("/api/get-config")
+            .then(response => {
+                if (response.status !== 200) {
+                    return this.setState({placeholder: "Something went wrong"});
+                }
+                return response.json();
+            })
+            .then(data => {console.log(data); this.setState({config: data, loaded: true})});
+    }
+
+    componentDidMount() {
+        this.refresh();
+    }
+    render() {
+        return !this.state.loaded ? <React.Fragment>{this.state.placeholder}</React.Fragment> : (
+            <React.Fragment>
+                <nav className="navbar is-white">
+                    <div className="container">
+                        <div className="navbar-brand">
+                            <a className="navbar-item brand-text" href="../">
+                                Admin
+                            </a>
+                        </div>
+                        {/*<div id="navMenu" className="navbar-menu">*/}
+                        {/*    <div className="navbar-start">*/}
+                        {/*        <a className="navbar-item" href="admin.html">*/}
+                        {/*            Home*/}
+                        {/*        </a>*/}
+                        {/*        <a className="navbar-item" href="admin.html">*/}
+                        {/*            Orders*/}
+                        {/*        </a>*/}
+                        {/*        <a className="navbar-item" href="admin.html">*/}
+                        {/*            Payments*/}
+                        {/*        </a>*/}
+                        {/*        <a className="navbar-item" href="admin.html">*/}
+                        {/*            Exceptions*/}
+                        {/*        </a>*/}
+                        {/*    </div>*/}
+                        {/*</div>*/}
+                    </div>
+                </nav>
+
+                <div className="container">
+                    <div className="columns">
+                        <div className="column is-3 ">
+                            <aside className="menu">
+                                <p className="menu-label">
+                                    General
+                                </p>
+                                <ul className="menu-list">
+                                    <li><NavLink to="/" exact={true} activeClassName="is-active">NiFi
+                                        Instances</NavLink></li>
+                                    <li><NavLink to="/nifi-images" activeClassName="is-active">NiFi Images</NavLink>
+                                    </li>
+                                    <li><a href={"https://registry." + this.state.config.domain + "/nifi-registry"}
+                                           target="_blank">Registry</a></li>
+                                    {/*<li><a>Kubernetes</a></li>*/}
+                                </ul>
+                                <p className="menu-label">
+                                    Debug
+                                </p>
+                                <ul className="menu-list">
+                                    <li><a>Events</a></li>
+                                </ul>
+                            </aside>
+                        </div>
+                        <div className="column is-9">
+                            <Route exact path="/" component={NifiInstanceList}/>
+                            <Route path={`/create_nifi`} component={NifiInstanceNew}/>
+                            <Route path={`/nifi/:nifiInstanceId`} component={NifiInstance}/>
+                            <Route path={`/nifi-images`} component={NifiImageList}/>
+                            <Route path={`/create-nifi-image`} component={NifiImageNew}/>
+                            <Route path={`/nifi-image/:nifiImageId`} component={NifiImage}/>
+                        </div>
+                    </div>
+                </div>
+
+            </React.Fragment>
+        );
+    }
+}
 
 console.log('requesting config');
 fetch("/api/get-config").then(
