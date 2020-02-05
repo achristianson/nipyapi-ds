@@ -6,6 +6,9 @@ import {perform_cloud_ops} from "../util/bg_tasks";
 import {NifiInstance, NifiInstanceList} from "./NifiInstanceList";
 import {NifiImage, NifiImageList} from "./NifiImageList";
 import {NifiImageNew} from "./NifiImageNew";
+import {DockerAuthConfig, DockerAuthConfigList} from "./DockerAuthConfigList";
+import {DockerAuthConfigNew} from "./DockerAuthConfigNew";
+import {DockerAuthConfigDetail} from "./DockerAuthConfigDetail";
 
 class App extends React.Component {
 
@@ -75,6 +78,12 @@ class App extends React.Component {
                                     {/*<li><a>Kubernetes</a></li>*/}
                                 </ul>
                                 <p className="menu-label">
+                                    Infra
+                                </p>
+                                <ul className="menu-list">
+                                    <li><NavLink to="/docker-auth-configs" activeClassName="is-active">Docker Auth Configs</NavLink></li>
+                                </ul>
+                                <p className="menu-label">
                                     Debug
                                 </p>
                                 <ul className="menu-list">
@@ -89,6 +98,9 @@ class App extends React.Component {
                             <Route path={`/nifi-images`} component={NifiImageList}/>
                             <Route path={`/create-nifi-image`} component={NifiImageNew}/>
                             <Route path={`/nifi-image/:nifiImageId`} component={NifiImage}/>
+                            <Route path={`/docker-auth-configs`} component={DockerAuthConfigList}/>
+                            <Route path={`/create-docker-auth-config`} component={DockerAuthConfigNew}/>
+                            <Route path={`/docker-auth-config/:authConfigId`} component={DockerAuthConfig}/>
                         </div>
                     </div>
                 </div>

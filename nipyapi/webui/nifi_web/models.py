@@ -39,3 +39,10 @@ class NifiImageBuild(models.Model):
     state = models.CharField(max_length=100, default='PENDING_BUILD')
     docker_id = models.CharField(max_length=1000, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DockerRegistryAuth(models.Model):
+    name = models.CharField(max_length=1000)
+    username = models.CharField(max_length=1000, null=False)
+    password = models.CharField(max_length=1000, null=False)
+    created_at = models.DateTimeField(auto_now_add=True)

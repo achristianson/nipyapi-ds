@@ -15,4 +15,8 @@ urlpatterns = [
     path('api/nifi-image-build', views.NifiImageBuildList.as_view()),
     path('api/nifi-image-build/new', views.NifiImageBuildCreate.as_view()),
     path('api/nifi-image-build/<int:nifi_image_build_id>', views.NifiImageBuildDetail.as_view()),
+    path('api/get-config', views.get_config),
+    path('api/docker-registry-auth', views.DockerRegistryAuthList.as_view()),
+    path('api/docker-registry-auth/new', views.DockerRegistryAuthCreate.as_view()),
+    path('api/docker-registry-auth/<int:registry_auth_id>', views.DockerRegistryAuthDetail.as_view()),
 ]

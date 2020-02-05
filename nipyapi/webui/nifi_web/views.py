@@ -3,9 +3,9 @@ import os
 from django.db.models import Q
 from django.http import JsonResponse
 from nifi_web.bg_tasks import perform_cloud_ops
-from nifi_web.models import NifiInstance, K8sCluster, NifiImage, NifiImageBuild
+from nifi_web.models import NifiInstance, K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth
 from nifi_web.serializers import NifiInstanceSerializer, K8sClusterSerializer, NifiInstanceDeepSerializer, \
-    NifiImageSerializer, NifiImageBuildSerializer
+    NifiImageSerializer, NifiImageBuildSerializer, DockerRegistryAuthSerializer
 from rest_framework import generics
 
 
@@ -50,6 +50,22 @@ class NifiImageDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NifiImageSerializer
     lookup_url_kwarg = 'nifi_image_id'
     queryset = NifiImage.objects.all()
+
+
+class DockerRegistryAuthList(generics.ListAPIView):
+    queryset = DockerRegistryAuth.objects.all()
+    serializer_class = DockerRegistryAuthSerializer
+
+
+class DockerRegistryAuthCreate(generics.CreateAPIView):
+    queryset = DockerRegistryAuth.objects.all()
+    serializer_class = DockerRegistryAuthSerializer
+
+
+class DockerRegistryAuthDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = DockerRegistryAuthSerializer
+    lookup_url_kwarg = 'registry_auth_id'
+    queryset = DockerRegistryAuth.objects.all()
 
 
 class NifiImageBuildList(generics.ListAPIView):

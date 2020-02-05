@@ -30,3 +30,10 @@ export const NifiImagesCrumb = () => (
         <li><Link to="/nifi-images">NiFi Images</Link></li>
     </React.Fragment>
 );
+
+export const DockerAuthConfigsCrumb = () => (
+    <React.Fragment>
+        <AdminCrumb/>
+        <li><Link to="/docker-auth-configs">Docker Auth Configs</Link></li>
+    </React.Fragment>
+);
