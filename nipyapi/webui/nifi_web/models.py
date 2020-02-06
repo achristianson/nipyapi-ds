@@ -42,7 +42,28 @@ class NifiImageBuild(models.Model):
 
 
 class DockerRegistryAuth(models.Model):
-    name = models.CharField(max_length=1000)
+    name = models.CharField(max_length=1000, null=False)
     username = models.CharField(max_length=1000, null=False)
     password = models.CharField(max_length=1000, null=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class InstanceType(models.Model):
+    name = models.CharField(max_length=100)
+    image = models.CharField(max_length=1000)
+    auth = models.ForeignKey(DockerRegistryAuth, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class InstanceTypeEnvVar(models.Model):
+    instance_type = models.ForeignKey(InstanceType, on_delete=models.CASCADE)
+    name = models.CharField(max_length=1000, null=False)
+    default_value = models.CharField(max_length=1000, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class InstanceTypePort(models.Model):
+    instance_type = models.ForeignKey(InstanceType, on_delete=models.CASCADE)
+    internal = models.IntegerField()
+    external = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)

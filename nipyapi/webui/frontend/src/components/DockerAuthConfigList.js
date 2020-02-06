@@ -37,7 +37,7 @@ export class DockerAuthConfigList extends Component {
             <React.Fragment>
                 <Breadcrumb>
                     <AdminCrumb/>
-                    <CurrentCrumb>NiFi Images</CurrentCrumb>
+                    <CurrentCrumb>Docker Auth Configs</CurrentCrumb>
                 </Breadcrumb>
                 <section className="">
                     <div className="content">

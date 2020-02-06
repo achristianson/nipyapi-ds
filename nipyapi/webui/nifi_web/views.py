@@ -3,9 +3,11 @@ import os
 from django.db.models import Q
 from django.http import JsonResponse
 from nifi_web.bg_tasks import perform_cloud_ops
-from nifi_web.models import NifiInstance, K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth
+from nifi_web.models import NifiInstance, K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth, InstanceType, \
+    InstanceTypeEnvVar, InstanceTypePort
 from nifi_web.serializers import NifiInstanceSerializer, K8sClusterSerializer, NifiInstanceDeepSerializer, \
-    NifiImageSerializer, NifiImageBuildSerializer, DockerRegistryAuthSerializer
+    NifiImageSerializer, NifiImageBuildSerializer, DockerRegistryAuthSerializer, InstanceTypeSerializer, \
+    InstanceTypeEnvVarSerializer, InstanceTypePortSerializer
 from rest_framework import generics
 
 
@@ -66,6 +68,54 @@ class DockerRegistryAuthDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DockerRegistryAuthSerializer
     lookup_url_kwarg = 'registry_auth_id'
     queryset = DockerRegistryAuth.objects.all()
+
+
+class InstanceTypeList(generics.ListAPIView):
+    queryset = InstanceType.objects.all()
+    serializer_class = InstanceTypeSerializer
+
+
+class InstanceTypeCreate(generics.CreateAPIView):
+    queryset = InstanceType.objects.all()
+    serializer_class = InstanceTypeSerializer
+
+
+class InstanceTypeDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InstanceTypeSerializer
+    lookup_url_kwarg = 'obj_id'
+    queryset = InstanceType.objects.all()
+
+
+class InstanceTypeEnvVarList(generics.ListAPIView):
+    queryset = InstanceTypeEnvVar.objects.all()
+    serializer_class = InstanceTypeEnvVarSerializer
+
+
+class InstanceTypeEnvVarCreate(generics.CreateAPIView):
+    queryset = InstanceTypeEnvVar.objects.all()
+    serializer_class = InstanceTypeEnvVarSerializer
+
+
+class InstanceTypeEnvVarDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InstanceTypeEnvVarSerializer
+    lookup_url_kwarg = 'obj_id'
+    queryset = InstanceTypeEnvVar.objects.all()
+
+
+class InstanceTypePortList(generics.ListAPIView):
+    queryset = InstanceTypePort.objects.all()
+    serializer_class = InstanceTypePortSerializer
+
+
+class InstanceTypePortCreate(generics.CreateAPIView):
+    queryset = InstanceTypePort.objects.all()
+    serializer_class = InstanceTypePortSerializer
+
+
+class InstanceTypePortDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InstanceTypePortSerializer
+    lookup_url_kwarg = 'obj_id'
+    queryset = InstanceTypePort.objects.all()
 
 
 class NifiImageBuildList(generics.ListAPIView):

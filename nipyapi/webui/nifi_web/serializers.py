@@ -1,4 +1,5 @@
-from nifi_web.models import K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth
+from nifi_web.models import K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth, InstanceTypePort, \
+    InstanceTypeEnvVar, InstanceType
 from nifi_web.models import NifiInstance
 from rest_framework import serializers
 
@@ -18,6 +19,24 @@ class NifiImageSerializer(serializers.ModelSerializer):
 class DockerRegistryAuthSerializer(serializers.ModelSerializer):
     class Meta:
         model = DockerRegistryAuth
+        fields = '__all__'
+
+
+class InstanceTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstanceType
+        fields = '__all__'
+
+
+class InstanceTypeEnvVarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstanceTypeEnvVar
+        fields = '__all__'
+
+
+class InstanceTypePortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstanceTypePort
         fields = '__all__'
 
 

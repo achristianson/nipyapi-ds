@@ -19,4 +19,13 @@ urlpatterns = [
     path('api/docker-registry-auth', views.DockerRegistryAuthList.as_view()),
     path('api/docker-registry-auth/new', views.DockerRegistryAuthCreate.as_view()),
     path('api/docker-registry-auth/<int:registry_auth_id>', views.DockerRegistryAuthDetail.as_view()),
+    path('api/instance-type', views.InstanceTypeList.as_view()),
+    path('api/instance-type/new', views.InstanceTypeCreate.as_view()),
+    path('api/instance-type/<int:obj_id>', views.InstanceTypeDetail.as_view()),
+    path('api/instance-type-env-var', views.InstanceTypeEnvVarList.as_view()),
+    path('api/instance-type-env-var/new', views.InstanceTypeEnvVarCreate.as_view()),
+    path('api/instance-type-env-var/<int:obj_id>', views.InstanceTypeEnvVarDetail.as_view()),
+    path('api/instance-type-port-env-var', views.InstanceTypePortList.as_view()),
+    path('api/instance-type-port-env-var/new', views.InstanceTypePortCreate.as_view()),
+    path('api/instance-type-port-env-var/<int:obj_id>', views.InstanceTypePortDetail.as_view()),
 ]

@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import {Redirect} from "react-router";
-import {Breadcrumb, CurrentCrumb, NifiImagesCrumb} from "./Breadcrumb";
+import {Breadcrumb, CurrentCrumb, DockerAuthConfigsCrumb, NifiImagesCrumb} from "./Breadcrumb";
 import DataProvider from "./DataProvider";
 import {perform_cloud_ops} from "../util/bg_tasks";
 
@@ -43,7 +43,7 @@ export class DockerAuthConfigNew extends Component {
         return (
             <React.Fragment>
                 <Breadcrumb>
-                    <NifiImagesCrumb/>
+                    <DockerAuthConfigsCrumb/>
                     <CurrentCrumb>New Docker Auth Config</CurrentCrumb>
                 </Breadcrumb>
                 <div className="column">
