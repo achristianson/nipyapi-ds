@@ -31,6 +31,13 @@ export const NifiImagesCrumb = () => (
     </React.Fragment>
 );
 
+export const ImageMirrorsCrumb = () => (
+    <React.Fragment>
+        <AdminCrumb/>
+        <li><Link to="/mirror-images">Mirror Images</Link></li>
+    </React.Fragment>
+);
+
 export const DockerAuthConfigsCrumb = () => (
     <React.Fragment>
         <AdminCrumb/>

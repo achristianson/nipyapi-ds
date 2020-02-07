@@ -4,10 +4,11 @@ from django.db.models import Q
 from django.http import JsonResponse
 from nifi_web.bg_tasks import perform_cloud_ops
 from nifi_web.models import NifiInstance, K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth, InstanceType, \
-    InstanceTypeEnvVar, InstanceTypePort
+    InstanceTypeEnvVar, InstanceTypePort, ImageMirror, ImageMirrorJob, Instance
 from nifi_web.serializers import NifiInstanceSerializer, K8sClusterSerializer, NifiInstanceDeepSerializer, \
     NifiImageSerializer, NifiImageBuildSerializer, DockerRegistryAuthSerializer, InstanceTypeSerializer, \
-    InstanceTypeEnvVarSerializer, InstanceTypePortSerializer
+    InstanceTypeEnvVarSerializer, InstanceTypePortSerializer, ImageMirrorSerializer, ImageMirrorJobSerializer, \
+    InstanceSerializer
 from rest_framework import generics
 
 
@@ -54,6 +55,22 @@ class NifiImageDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = NifiImage.objects.all()
 
 
+class ImageMirrorList(generics.ListAPIView):
+    queryset = ImageMirror.objects.all()
+    serializer_class = ImageMirrorSerializer
+
+
+class ImageMirrorCreate(generics.CreateAPIView):
+    queryset = ImageMirror.objects.all()
+    serializer_class = ImageMirrorSerializer
+
+
+class ImageMirrorDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ImageMirrorSerializer
+    lookup_url_kwarg = 'obj_id'
+    queryset = ImageMirror.objects.all()
+
+
 class DockerRegistryAuthList(generics.ListAPIView):
     queryset = DockerRegistryAuth.objects.all()
     serializer_class = DockerRegistryAuthSerializer
@@ -86,9 +103,40 @@ class InstanceTypeDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = InstanceType.objects.all()
 
 
+class InstanceList(generics.ListAPIView):
+    serializer_class = InstanceSerializer
+
+    def get_queryset(self):
+        queryset = Instance.objects.all()
+        parent = self.request.query_params.get('parent', None)
+        if parent is not None:
+            queryset = queryset.filter(parent=parent)
+        instance_type = self.request.query_params.get('instance_type', None)
+        if instance_type is not None:
+            queryset = queryset.filter(instance_type=parent)
+        return queryset
+
+
+class InstanceCreate(generics.CreateAPIView):
+    queryset = Instance.objects.all()
+    serializer_class = InstanceSerializer
+
+
+class InstanceDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InstanceSerializer
+    lookup_url_kwarg = 'obj_id'
+    queryset = Instance.objects.all()
+
+
 class InstanceTypeEnvVarList(generics.ListAPIView):
-    queryset = InstanceTypeEnvVar.objects.all()
     serializer_class = InstanceTypeEnvVarSerializer
+
+    def get_queryset(self):
+        queryset = InstanceTypeEnvVar.objects.all()
+        instance_type_id = self.request.query_params.get('instance_type', None)
+        if instance_type_id is not None:
+            queryset = queryset.filter(instance_type=instance_type_id)
+        return queryset
 
 
 class InstanceTypeEnvVarCreate(generics.CreateAPIView):
@@ -103,8 +151,14 @@ class InstanceTypeEnvVarDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class InstanceTypePortList(generics.ListAPIView):
-    queryset = InstanceTypePort.objects.all()
     serializer_class = InstanceTypePortSerializer
+
+    def get_queryset(self):
+        queryset = InstanceTypePort.objects.all()
+        instance_type_id = self.request.query_params.get('instance_type', None)
+        if instance_type_id is not None:
+            queryset = queryset.filter(instance_type=instance_type_id)
+        return queryset
 
 
 class InstanceTypePortCreate(generics.CreateAPIView):
@@ -122,10 +176,6 @@ class NifiImageBuildList(generics.ListAPIView):
     serializer_class = NifiImageBuildSerializer
 
     def get_queryset(self):
-        """
-        Optionally restricts the returned purchases to a given user,
-        by filtering against a `username` query parameter in the URL.
-        """
         queryset = NifiImageBuild.objects.all()
         image_id = self.request.query_params.get('image', None)
         if image_id is not None:
@@ -142,6 +192,28 @@ class NifiImageBuildDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NifiImageBuildSerializer
     lookup_url_kwarg = 'nifi_image_build_id'
     queryset = NifiImageBuild.objects.all()
+
+
+class ImageMirrorJobList(generics.ListAPIView):
+    serializer_class = ImageMirrorJobSerializer
+
+    def get_queryset(self):
+        queryset = ImageMirrorJob.objects.all()
+        mirror_id = self.request.query_params.get('mirror', None)
+        if mirror_id is not None:
+            queryset = queryset.filter(image=mirror_id)
+        return queryset
+
+
+class ImageMirrorJobCreate(generics.CreateAPIView):
+    queryset = ImageMirrorJob.objects.all()
+    serializer_class = ImageMirrorJobSerializer
+
+
+class ImageMirrorJobDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ImageMirrorJobSerializer
+    lookup_url_kwarg = 'nifi_image_build_id'
+    queryset = ImageMirrorJob.objects.all()
 
 
 def get_config(request):

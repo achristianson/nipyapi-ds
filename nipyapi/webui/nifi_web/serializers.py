@@ -1,5 +1,5 @@
 from nifi_web.models import K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth, InstanceTypePort, \
-    InstanceTypeEnvVar, InstanceType
+    InstanceTypeEnvVar, InstanceType, ImageMirror, ImageMirrorJob, Instance
 from nifi_web.models import NifiInstance
 from rest_framework import serializers
 
@@ -16,6 +16,18 @@ class NifiImageSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ImageMirrorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImageMirror
+        fields = '__all__'
+
+
+class ImageMirrorJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImageMirrorJob
+        fields = '__all__'
+
+
 class DockerRegistryAuthSerializer(serializers.ModelSerializer):
     class Meta:
         model = DockerRegistryAuth
@@ -25,6 +37,12 @@ class DockerRegistryAuthSerializer(serializers.ModelSerializer):
 class InstanceTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstanceType
+        fields = '__all__'
+
+
+class InstanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Instance
         fields = '__all__'
 
 

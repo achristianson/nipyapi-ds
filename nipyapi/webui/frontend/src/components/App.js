@@ -11,6 +11,8 @@ import {DockerAuthConfigNew} from "./DockerAuthConfigNew";
 import {DockerAuthConfigDetail} from "./DockerAuthConfigDetail";
 import {InstanceType, InstanceTypeList} from "./InstanceTypeList";
 import {InstanceTypeNew} from "./InstanceTypeNew";
+import {ImageMirror, ImageMirrorList} from "./ImageMirrorList";
+import {ImageMirrorNew} from "./ImageMirrorNew";
 
 class App extends React.Component {
 
@@ -89,6 +91,9 @@ class App extends React.Component {
                                     Infra
                                 </p>
                                 <ul className="menu-list">
+                                    <li><NavLink to="/mirror-images" activeClassName="is-active">Mirror Images</NavLink></li>
+                                </ul>
+                                <ul className="menu-list">
                                     <li><NavLink to="/docker-auth-configs" activeClassName="is-active">Docker Auth Configs</NavLink></li>
                                 </ul>
                                 <p className="menu-label">
@@ -112,6 +117,9 @@ class App extends React.Component {
                             <Route path={`/instance-types`} component={InstanceTypeList}/>
                             <Route path={`/create-instance-type`} component={InstanceTypeNew}/>
                             <Route path={`/instance-type/:objId`} component={InstanceType}/>
+                            <Route path={`/mirror-images`} component={ImageMirrorList}/>
+                            <Route path={`/create-mirror-image`} component={ImageMirrorNew}/>
+                            <Route path={`/mirror-image/:mirrorId`} component={ImageMirror}/>
                         </div>
                     </div>
                 </div>

@@ -48,10 +48,29 @@ class DockerRegistryAuth(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+class ImageMirror(models.Model):
+    from_image = models.CharField(max_length=1000, null=False)
+    to_image = models.CharField(max_length=1000, null=False)
+    auth = models.ForeignKey(DockerRegistryAuth, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ImageMirrorJob(models.Model):
+    mirror = models.ForeignKey(ImageMirror, on_delete=models.CASCADE)
+    state = models.CharField(max_length=100, default='PENDING_MIRROR')
+    docker_id = models.CharField(max_length=1000, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class InstanceType(models.Model):
     name = models.CharField(max_length=100)
     image = models.CharField(max_length=1000)
-    auth = models.ForeignKey(DockerRegistryAuth, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Instance(models.Model):
+    instance_type = models.ForeignKey(InstanceType, on_delete=models.PROTECT)
+    parent = models.ForeignKey(NifiInstance, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
 

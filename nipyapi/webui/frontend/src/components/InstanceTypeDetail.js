@@ -6,6 +6,8 @@ import {perform_cloud_ops} from "../util/bg_tasks";
 import DataProvider from "./DataProvider";
 import Table from "./Table";
 import {Link} from "react-router-dom";
+import InstanceTypeEnvVarTable from "./InstanceTypeEnvVarTable";
+import InstanceTypePortTable from "./InstanceTypePortTable";
 
 export class InstanceTypeDetail extends Component {
     static propTypes = {
@@ -59,9 +61,20 @@ export class InstanceTypeDetail extends Component {
                                 <td>Name</td>
                                 <td>{this.props.data.name}</td>
                             </tr>
+                            <tr>
+                                <td>Docker Image</td>
+                                <td>{this.props.data.image}</td>
+                            </tr>
                             </tbody>
                         </table>
 
+                        <h4>Environment Variables</h4>
+
+                        <InstanceTypeEnvVarTable instance_type_id={this.props.data.id}/>
+
+                        <h4>Ports</h4>
+
+                        <InstanceTypePortTable instance_type_id={this.props.data.id}/>
 
                         <div className="buttons">
                             <a className="button" onClick={this.handleDelete}>Delete Instance Type</a>

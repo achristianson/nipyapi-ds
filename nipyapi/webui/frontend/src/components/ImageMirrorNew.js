@@ -1,28 +1,30 @@
 import React, {Component} from "react";
 import {Redirect} from "react-router";
-import {Breadcrumb, CurrentCrumb, DockerAuthConfigsCrumb, InstanceTypesCrumb, NifiImagesCrumb} from "./Breadcrumb";
+import {Breadcrumb, CurrentCrumb, ImageMirrorsCrumb} from "./Breadcrumb";
 import DataProvider from "./DataProvider";
 import {perform_cloud_ops} from "../util/bg_tasks";
 
-export class InstanceTypeNew extends Component {
+export class ImageMirrorNew extends Component {
     state = {
-        name: "",
-        image: "",
+        from_image: "",
+        to_image: "",
+        auth: ""
     };
 
     handleSubmit = e => {
         e.preventDefault();
         this.setState({creating: true});
         const inst = {
-            name: this.state.name,
-            image: this.state.image,
+            from_image: this.state.from_image,
+            to_image: this.state.to_image,
+            auth: this.state.auth
         };
         const conf = {
             method: "POST",
             body: JSON.stringify(inst),
             headers: new Headers({"Content-Type": "application/json"})
         };
-        fetch("/api/instance-type/new", conf).then(response => {
+        fetch("/api/image-mirror/new", conf).then(response => {
             this.setState({submitted: true});
             perform_cloud_ops();
         });
@@ -35,47 +37,62 @@ export class InstanceTypeNew extends Component {
 
     render() {
         if (this.state.submitted) {
-            return <Redirect to="/instance-types" push={true}/>;
+            return <Redirect to="/mirror-images" push={true}/>;
         }
 
         return (
             <React.Fragment>
                 <Breadcrumb>
-                    <InstanceTypesCrumb/>
-                    <CurrentCrumb>New Instance Type</CurrentCrumb>
+                    <ImageMirrorsCrumb/>
+                    <CurrentCrumb>New Mirror Image</CurrentCrumb>
                 </Breadcrumb>
                 <div className="column">
                     <form onSubmit={this.handleSubmit}>
                         <div className="field">
-                            <label className="label">Name</label>
+                            <label className="label">From Image</label>
                             <div className="control">
                                 <input
                                     className="input"
                                     type="text"
-                                    name="name"
+                                    name="from_image"
                                     onChange={this.handleChange}
-                                    value={this.state.name}
+                                    value={this.state.from_image}
                                     required
                                 />
                             </div>
                         </div>
                         <div className="field">
-                            <label className="label">Image</label>
+                            <label className="label">To Image</label>
                             <div className="control">
                                 <input
                                     className="input"
                                     type="text"
-                                    name="image"
+                                    name="to_image"
                                     onChange={this.handleChange}
-                                    value={this.state.image}
+                                    value={this.state.to_image}
                                     required
                                 />
+                            </div>
+                            <p>Of the form <em></em></p>
+                        </div>
+                        <div className="field">
+                            <label className="label">Docker Auth Config</label>
+                            <div className="control">
+                                <select name="auth" value={this.state.auth} onChange={this.handleChange}>
+                                    <option key=""/>
+                                    <DataProvider endpoint={"/api/docker-registry-auth"}
+                                                  placeholder={<React.Fragment/>}
+                                                  render={data => data.map(el => (
+                                                      <option key={el.id}
+                                                              value={el.id}>{el.name}</option>
+                                                  ))}/>
+                                </select>
                             </div>
                         </div>
                         <div className="control">
                             {this.state.creating ? <span>Creating...</span> : (
                                 <button type="submit" className="button is-info">
-                                    Create Instance Type
+                                    Create Mirror Image
                                 </button>
                             )}
                         </div>

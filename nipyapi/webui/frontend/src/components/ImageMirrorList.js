@@ -4,17 +4,15 @@ import {AdminCrumb, Breadcrumb, CurrentCrumb} from "./Breadcrumb";
 import DataProvider from "./DataProvider";
 import Table from "./Table";
 import {Link} from "react-router-dom";
-import {NifiImageDetail} from "./NifiImageDetail";
-import {DockerAuthConfigDetail} from "./DockerAuthConfigDetail";
-import {InstanceTypeDetail} from "./InstanceTypeDetail";
+import {ImageMirrorDetail} from "./ImageMirrorDetail";
 
-export const InstanceType = ({match}) => (
-    <DataProvider endpoint={"/api/instance-type/" + match.params.objId}
+export const ImageMirror = ({match}) => (
+    <DataProvider endpoint={"/api/image-mirror/" + match.params.mirrorId}
                   placeholder={<p>Loading...</p>}
-                  render={data => <InstanceTypeDetail data={data}/>}/>
+                  render={data => <ImageMirrorDetail data={data}/>}/>
 );
 
-export class InstanceTypeList extends Component {
+export class ImageMirrorList extends Component {
     state = {
         adding: false
     };
@@ -31,28 +29,29 @@ export class InstanceTypeList extends Component {
 
     render() {
         if (this.state.adding) {
-            return <Redirect to="/create-instance-type" push={true}/>;
+            return <Redirect to="/create-mirror-image" push={true}/>;
         }
 
         return (
             <React.Fragment>
                 <Breadcrumb>
                     <AdminCrumb/>
-                    <CurrentCrumb>Instance Types</CurrentCrumb>
+                    <CurrentCrumb>Mirror Images</CurrentCrumb>
                 </Breadcrumb>
                 <section className="">
                     <div className="content">
-                        <DataProvider endpoint="/api/instance-type"
+                        <DataProvider endpoint="/api/image-mirror"
                                       placeholder={<p>Loading...</p>}
                                       render={data => <Table data={data.map(d => {
                                           return {
                                               id: d.id,
-                                              "Name": <Link to={"/instance-type/" + d.id}>{d.name}</Link>
+                                              "From Image": <Link to={"/mirror-image/" + d.id}>{d.from_image}</Link>,
+                                              "To Image": d.to_image
                                           }
                                       })}/>} ref="provider"/>
                         <div className="buttons">
                             <a className="button" onClick={this.handleRefresh}>Refresh</a>
-                            <a className="button" onClick={this.handleNew}>New Instance Type</a>
+                            <a className="button" onClick={this.handleNew}>New Mirror Image</a>
                         </div>
                     </div>
                 </section>

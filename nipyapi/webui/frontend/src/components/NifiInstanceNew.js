@@ -16,8 +16,28 @@ export class NifiInstanceNew extends Component {
         deploy_jupyter: false,
         creating: false,
         submitted: false,
+        instance_types: [],
+        instance_types_loaded: false,
         cluster: 0
     };
+
+    refreshInstanceTypes() {
+        fetch("/api/instance-type")
+            .then(response => {
+                if (response.status !== 200) {
+                    return this.setState({placeholder: "Something went wrong"});
+                }
+                return response.json();
+            })
+            .then(data => this.setState({
+                instance_types: data.map(o => Object.assign(o, {checked: false, saved: false})),
+                instance_types_loaded: true
+            }));
+    }
+
+    componentDidMount() {
+        this.refreshInstanceTypes();
+    }
 
     handleSubmit = e => {
         e.preventDefault();
@@ -38,10 +58,34 @@ export class NifiInstanceNew extends Component {
             body: JSON.stringify(inst),
             headers: new Headers({"Content-Type": "application/json"})
         };
-        fetch("/api/nifi/new", conf).then(response => {
-            this.setState({submitted: true});
-            perform_cloud_ops();
-        });
+        fetch("/api/nifi/new", conf)
+            .then(r => r.json())
+            .then(new_inst => {
+                console.log('successfully created instance; adding component instances');
+                this.state.instance_types.forEach(instance_type => {
+                    if (instance_type.checked) {
+                        console.log('adding instance: ' + instance_type.name);
+                        fetch("/api/instance/new", {
+                            method: "POST",
+                            headers: new Headers({"Content-Type": "application/json"}),
+                            body: JSON.stringify({
+                                instance_type: instance_type.id,
+                                parent: new_inst.id
+                            })
+                        }).then(response => {
+                            let new_state = this.state;
+                            new_state.instance_types.map(o => Object.assign(o, {saved: instance_type.id === o.id}));
+                            this.setState(new_state);
+                            const is_complete = new_state.instance_types.reduce((acc, cur) => acc && cur.saved, true);
+                            if (is_complete) {
+                                console.log("completed adding component instances");
+                                this.setState({submitted: true});
+                                perform_cloud_ops();
+                            }
+                        })
+                    }
+                });
+            });
 
     };
 
@@ -58,6 +102,12 @@ export class NifiInstanceNew extends Component {
         } else {
             this.setState({[e.target.name]: e.target.value});
         }
+    };
+
+    handleInstanceTypeChecked = e => {
+        let new_state = this.state;
+        new_state.instance_types.map(o => Object.assign(o, {checked: e.checked ? e.id !== o.id : e.id === o.id}));
+        this.setState(new_state);
     };
 
     render() {
@@ -198,6 +248,18 @@ export class NifiInstanceNew extends Component {
                                 </label>
                             </div>
                         </div>
+                        {this.state.instance_types.map(instance_type =>
+                            <div key={instance_type.id} className="field">
+                                <div>
+                                    <label className="checkbox">
+                                        <input type="checkbox"
+                                               name="deploy_type"
+                                               checked={instance_type.checked}
+                                               onChange={() => this.handleInstanceTypeChecked(instance_type)}/>
+                                        {` `}Deploy {instance_type.name}
+                                    </label>
+                                </div>
+                            </div>)}
                         <div className="control">
                             {this.state.creating ? <span>Creating...</span> : (
                                 <button type="submit" className="button is-info">
