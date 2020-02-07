@@ -37,3 +37,10 @@ export const DockerAuthConfigsCrumb = () => (
         <li><Link to="/docker-auth-configs">Docker Auth Configs</Link></li>
     </React.Fragment>
 );
+
+export const InstanceTypesCrumb = () => (
+    <React.Fragment>
+        <AdminCrumb/>
+        <li><Link to="/instance-types">Instance Types</Link></li>
+    </React.Fragment>
+);

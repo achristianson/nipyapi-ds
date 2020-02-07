@@ -9,6 +9,8 @@ import {NifiImageNew} from "./NifiImageNew";
 import {DockerAuthConfig, DockerAuthConfigList} from "./DockerAuthConfigList";
 import {DockerAuthConfigNew} from "./DockerAuthConfigNew";
 import {DockerAuthConfigDetail} from "./DockerAuthConfigDetail";
+import {InstanceType, InstanceTypeList} from "./InstanceTypeList";
+import {InstanceTypeNew} from "./InstanceTypeNew";
 
 class App extends React.Component {
 
@@ -78,6 +80,12 @@ class App extends React.Component {
                                     {/*<li><a>Kubernetes</a></li>*/}
                                 </ul>
                                 <p className="menu-label">
+                                    Meta
+                                </p>
+                                <ul className="menu-list">
+                                    <li><NavLink to="/instance-types" activeClassName="is-active">Instance Types</NavLink></li>
+                                </ul>
+                                <p className="menu-label">
                                     Infra
                                 </p>
                                 <ul className="menu-list">
@@ -101,6 +109,9 @@ class App extends React.Component {
                             <Route path={`/docker-auth-configs`} component={DockerAuthConfigList}/>
                             <Route path={`/create-docker-auth-config`} component={DockerAuthConfigNew}/>
                             <Route path={`/docker-auth-config/:authConfigId`} component={DockerAuthConfig}/>
+                            <Route path={`/instance-types`} component={InstanceTypeList}/>
+                            <Route path={`/create-instance-type`} component={InstanceTypeNew}/>
+                            <Route path={`/instance-type/:objId`} component={InstanceType}/>
                         </div>
                     </div>
                 </div>
