@@ -73,7 +73,7 @@ export class ImageMirrorNew extends Component {
                                     required
                                 />
                             </div>
-                            <p>Of the form <em></em></p>
+                            <p>Of the form <em>gcr.io/gcp-dim/&lt;your img&gt;</em></p>
                         </div>
                         <div className="field">
                             <label className="label">Docker Auth Config</label>

@@ -26,13 +26,13 @@ def perform_mirror_ops():
 
             # pull img
             logger.info(f'mirroring image from {job.mirror.from_image} to {job.mirror.to_image}')
+            if job.mirror.auth is not None:
+                logger.info(f'logging in')
+                client.login(username=job.mirror.auth.username,
+                             password=job.mirror.auth.password)
             logger.info(f'pulling image {job.mirror.from_image}')
             if job.mirror.auth is not None:
-                img = client.images.pull(job.mirror.from_image,
-                                        auth_config={
-                                            'username': job.mirror.auth.username,
-                                            'password': job.mirror.auth.password
-                                        })
+                img = client.images.pull(job.mirror.from_image)
             else:
                 img = client.images.pull(job.mirror.from_image)
 
