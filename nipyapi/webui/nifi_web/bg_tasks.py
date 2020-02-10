@@ -13,6 +13,7 @@ from kubernetes.client import V1Container, V1EnvVar, V1ContainerPort, V1VolumeMo
     V1SecurityContext, V1Secret, V1Volume, V1ProjectedVolumeSource, V1VolumeProjection, V1SecretProjection, V1KeyToPath, \
     V1Service, V1ServiceSpec, V1ServicePort
 from nifi_web.docker.img_builder import perform_build_ops_bg
+from nifi_web.docker.img_mirrorer import perform_mirror_ops_bg
 from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deployment, \
     ensure_ingress_routed_svc, destroy_ingress_routed_svc, destroy_deployment, ensure_statefulset_with_containers, \
     destroy_statefulset, ensure_storage_class, ensure_secret, ensure_namespace, destroy_namespace, ensure_service, \
@@ -307,6 +308,7 @@ def perform_cloud_ops():
     )
 
     perform_build_ops_bg()
+    perform_mirror_ops_bg()
 
 
 def perform_nifi_ops(api_apps_v1, api_core_v1, api_custom, domain):
