@@ -64,6 +64,7 @@ class ImageMirrorJob(models.Model):
 
 class InstanceType(models.Model):
     name = models.CharField(max_length=100)
+    container_name = models.CharField(max_length=100)
     image = models.CharField(max_length=1000)
     created_at = models.DateTimeField(auto_now_add=True)
 

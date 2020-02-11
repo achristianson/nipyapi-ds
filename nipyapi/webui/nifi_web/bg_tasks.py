@@ -19,7 +19,7 @@ from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deploy
     destroy_statefulset, ensure_storage_class, ensure_secret, ensure_namespace, destroy_namespace, ensure_service, \
     destroy_service
 from nifi_web.k8s.traefik import ensure_traefik
-from nifi_web.models import K8sCluster, NifiInstance
+from nifi_web.models import K8sCluster, NifiInstance, Instance, InstanceType, InstanceTypeEnvVar, InstanceTypePort
 
 logger = logging.getLogger(__name__)
 
@@ -398,6 +398,18 @@ def destroy_nifi_instances(api_apps_v1, api_core_v1, api_custom):
                 name='jupyter-' + instance.hostname,
                 namespace=instance.namespace
             )
+
+            # destroy custom instance types
+            custom_instances = Instance.objects.filter(parent=instance)
+            for ci in custom_instances:
+                inst_type: InstanceType = ci.instance_type
+                destroy_deployment(
+                    api_apps_v1,
+                    namespace=instance.namespace,
+                    name=inst_type.container_name
+                )
+                ci.delete()
+
             if instance.namespace != "default":
                 destroy_namespace(api_core_v1, instance.namespace)
             instance.state = 'DESTROYED'
@@ -673,6 +685,25 @@ def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
                     port_name=port_name,
                     svc_port=8888,
                     target_port=8888
+                )
+
+            # deploy custom instance types
+            custom_instances = Instance.objects.filter(parent=instance)
+            for ci in custom_instances:
+                inst_type: InstanceType = ci.instance_type
+                env_vars = [V1EnvVar(name=e.name, value=e.default_value) for e in
+                            InstanceTypeEnvVar.objects.filter(instance_type=inst_type)]
+                ports = [V1ContainerPort(container_port=p.internal, host_port=p.external) for p in
+                         InstanceTypePort.objects.filter(instance_type=inst_type)]
+                ensure_single_container_deployment(
+                    api_apps_v1,
+                    V1Container(
+                        name=inst_type.container_name,
+                        image=inst_type.image,
+                        env=env_vars,
+                        ports=ports),
+                    inst_type.container_name,
+                    instance.namespace
                 )
 
             instance.state = 'RUNNING'

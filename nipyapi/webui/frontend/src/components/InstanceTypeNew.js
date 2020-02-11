@@ -7,6 +7,7 @@ import {perform_cloud_ops} from "../util/bg_tasks";
 export class InstanceTypeNew extends Component {
     state = {
         name: "",
+        container_name: "",
         image: "",
     };
 
@@ -15,6 +16,7 @@ export class InstanceTypeNew extends Component {
         this.setState({creating: true});
         const inst = {
             name: this.state.name,
+            container_name: this.state.container_name,
             image: this.state.image,
         };
         const conf = {
@@ -55,6 +57,19 @@ export class InstanceTypeNew extends Component {
                                     name="name"
                                     onChange={this.handleChange}
                                     value={this.state.name}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="field">
+                            <label className="label">Container Name</label>
+                            <div className="control">
+                                <input
+                                    className="input"
+                                    type="text"
+                                    name="container_name"
+                                    onChange={this.handleChange}
+                                    value={this.state.container_name}
                                     required
                                 />
                             </div>

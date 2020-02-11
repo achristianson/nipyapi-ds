@@ -62,6 +62,10 @@ export class InstanceTypeDetail extends Component {
                                 <td>{this.props.data.name}</td>
                             </tr>
                             <tr>
+                                <td>Container Name</td>
+                                <td>{this.props.data.container_name}</td>
+                            </tr>
+                            <tr>
                                 <td>Docker Image</td>
                                 <td>{this.props.data.image}</td>
                             </tr>
