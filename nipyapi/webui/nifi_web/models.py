@@ -87,3 +87,11 @@ class InstanceTypePort(models.Model):
     internal = models.IntegerField()
     external = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class InstanceTypeIngressRoutedService(models.Model):
+    instance_type = models.ForeignKey(InstanceType, on_delete=models.CASCADE)
+    service_name = models.CharField(max_length=100)
+    svc_port = models.IntegerField()
+    target_port = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
