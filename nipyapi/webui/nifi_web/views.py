@@ -4,11 +4,11 @@ from django.db.models import Q
 from django.http import JsonResponse
 from nifi_web.bg_tasks import perform_cloud_ops
 from nifi_web.models import NifiInstance, K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth, InstanceType, \
-    InstanceTypeEnvVar, InstanceTypePort, ImageMirror, ImageMirrorJob, Instance
+    InstanceTypeEnvVar, InstanceTypePort, ImageMirror, ImageMirrorJob, Instance, InstanceTypeIngressRoutedService
 from nifi_web.serializers import NifiInstanceSerializer, K8sClusterSerializer, NifiInstanceDeepSerializer, \
     NifiImageSerializer, NifiImageBuildSerializer, DockerRegistryAuthSerializer, InstanceTypeSerializer, \
     InstanceTypeEnvVarSerializer, InstanceTypePortSerializer, ImageMirrorSerializer, ImageMirrorJobSerializer, \
-    InstanceSerializer
+    InstanceSerializer, InstanceTypeIngressRoutedServiceSerializer
 from rest_framework import generics
 
 
@@ -170,6 +170,28 @@ class InstanceTypePortDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = InstanceTypePortSerializer
     lookup_url_kwarg = 'obj_id'
     queryset = InstanceTypePort.objects.all()
+
+
+class InstanceTypeIngressRoutedServiceList(generics.ListAPIView):
+    serializer_class = InstanceTypeIngressRoutedServiceSerializer
+
+    def get_queryset(self):
+        queryset = InstanceTypeIngressRoutedService.objects.all()
+        instance_type_id = self.request.query_params.get('instance_type', None)
+        if instance_type_id is not None:
+            queryset = queryset.filter(instance_type=instance_type_id)
+        return queryset
+
+
+class InstanceTypeIngressRoutedServiceCreate(generics.CreateAPIView):
+    queryset = InstanceTypeIngressRoutedService.objects.all()
+    serializer_class = InstanceTypeIngressRoutedServiceSerializer
+
+
+class InstanceTypeIngressRoutedServiceDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InstanceTypeIngressRoutedServiceSerializer
+    lookup_url_kwarg = 'obj_id'
+    queryset = InstanceTypeIngressRoutedService.objects.all()
 
 
 class NifiImageBuildList(generics.ListAPIView):

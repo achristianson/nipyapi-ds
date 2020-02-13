@@ -5,14 +5,90 @@ import {Breadcrumb, CurrentCrumb, NifiInstancesCrumb} from "./Breadcrumb";
 import {ClusterMini} from "./ClusterMini";
 import {perform_cloud_ops} from "../util/bg_tasks";
 
+
+class InstanceSvcRow extends Component {
+    static propTypes = {
+        service: PropTypes.object.isRequired,
+        nifi_instance: PropTypes.object.isRequired
+    };
+
+    state = {};
+
+    render() {
+        return <tr>
+            <td>{this.props.service.name}</td>
+            <td>
+                <a
+                    target="_blank"
+                    href={"https://" + this.props.service.service_name + "-" + this.props.nifi_instance.hostname + "." + window.nifi_web_config.domain + "/"}>
+                    {"https://" + this.props.service.service_name + "-" + this.props.nifi_instance.hostname + "." + window.nifi_web_config.domain}
+                </a></td>
+        </tr>;
+    }
+}
+
+
+class InstanceRow extends Component {
+    static propTypes = {
+        instance: PropTypes.number.isRequired,
+        nifi_instance: PropTypes.object.isRequired
+    };
+
+    state = {
+        services_loaded: false,
+        services: []
+    };
+
+    refreshServices() {
+        fetch("/api/instance-type-ingress-svc?parent=" + this.props.instance.instance_type)
+            .then(response => {
+                if (response.status !== 200) {
+                    return this.setState({placeholder: "Something went wrong"});
+                }
+                return response.json();
+            })
+            .then(data => this.setState({services: data, services_loaded: true}));
+    }
+
+    componentDidMount() {
+        this.refreshServices();
+    }
+
+    render() {
+        return this.state.services_loaded ? this.state.services.map(service => <InstanceSvcRow key={service.id} service={service} nifi_instance={this.props.nifi_instance}/>) :
+            <tr>
+                <td/>
+                <td>Loading...</td>
+            </tr>;
+    }
+}
+
+
 export class NifiInstanceDetail extends Component {
     static propTypes = {
         data: PropTypes.object.isRequired
     };
 
     state = {
-        destroyed: false
+        destroyed: false,
+        instances_loaded: false,
+        instances: []
     };
+
+    refreshInstances() {
+        fetch("/api/instance?parent=" + this.props.data.id)
+            .then(response => {
+                if (response.status !== 200) {
+                    return this.setState({placeholder: "Something went wrong"});
+                }
+                return response.json();
+            })
+            .then(data => this.setState({instances: data, instances_loaded: true}));
+    }
+
+    componentDidMount() {
+        this.refreshInstances();
+    }
 
     handleDestroy = () => {
         console.log("Requesting destruction of nifi instance: " + this.props.data.id);
@@ -173,6 +249,12 @@ export class NifiInstanceDetail extends Component {
                                 <tr>
                                     <td>Jupyter Notebook Data Science Stack</td>
                                     <td>Not deployed</td>
+                                </tr>}
+                            {this.state.instances_loaded ?
+                                this.state.instances.map(instance => <InstanceRow key={instance.id} nifi_instance={this.props.data} instance={instance}/>) :
+                                <tr>
+                                    <td/>
+                                    <td>Loading custom instance types...</td>
                                 </tr>}
                             <tr>
                                 <td>State</td>

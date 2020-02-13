@@ -7,13 +7,11 @@ class InstanceTypePortTable extends React.Component {
     state = {
         add_port: {
             id: "",
-            internal: "",
-            external: ""
+            internal: ""
         },
         edit_port: {
             id: "",
-            internal: "",
-            external: ""
+            internal: ""
         },
         ports: [],
         ports_loaded: false
@@ -39,8 +37,7 @@ class InstanceTypePortTable extends React.Component {
         this.setState({creating: true});
         const inst = {
             instance_type: this.props.instance_type_id,
-            internal: this.state.add_port.internal,
-            external: this.state.add_port.external
+            internal: this.state.add_port.internal
         };
         const conf = {
             method: "POST",
@@ -50,8 +47,7 @@ class InstanceTypePortTable extends React.Component {
         this.setState({
             add_port: {
                 id: "",
-                internal: "",
-                external: ""
+                internal: ""
             }
         });
         fetch("/api/instance-type-port/new", conf).then(response => {
@@ -66,8 +62,7 @@ class InstanceTypePortTable extends React.Component {
         this.setState({creating: true});
         const inst = {
             instance_type: this.state.edit_port.instance_type,
-            internal: this.state.edit_port.internal,
-            external: this.state.edit_port.external
+            internal: this.state.edit_port.internal
         };
         const conf = {
             method: "PUT",
@@ -77,8 +72,7 @@ class InstanceTypePortTable extends React.Component {
         this.setState({
             edit_port: {
                 id: "",
-                internal: "",
-                external: ""
+                internal: ""
             }
         });
         fetch("/api/instance-type-port/" + this.state.edit_port.id, conf).then(response => {
@@ -104,8 +98,7 @@ class InstanceTypePortTable extends React.Component {
         this.setState({
             edit_port: {
                 id: "",
-                internal: "",
-                external: ""
+                internal: ""
             }
         })
     };
@@ -133,8 +126,7 @@ class InstanceTypePortTable extends React.Component {
             <table className="table is-striped">
                 <thead>
                 <tr>
-                    <th>Internal</th>
-                    <th>External</th>
+                    <th>Port</th>
                     <th/>
                 </tr>
                 </thead>
@@ -149,14 +141,6 @@ class InstanceTypePortTable extends React.Component {
                             value={this.state.edit_port.internal}
                             required
                         /> : el.internal}</td>
-                        <td>{this.state.edit_port.id === el.id ? <input
-                            className="input"
-                            type="text"
-                            name="external"
-                            onChange={this.handleEditChange}
-                            value={this.state.edit_port.external}
-                            required
-                        /> : el.external}</td>
                         {this.state.edit_port.id === el.id ?
                             <td>
                                 <div className="buttons">
@@ -180,16 +164,6 @@ class InstanceTypePortTable extends React.Component {
                             name="internal"
                             onChange={this.handleAddChange}
                             value={this.state.add_port.internal}
-                            required
-                        />
-                    </td>
-                    <td>
-                        <input
-                            className="input"
-                            type="text"
-                            name="external"
-                            onChange={this.handleAddChange}
-                            value={this.state.add_port.external}
                             required
                         />
                     </td>

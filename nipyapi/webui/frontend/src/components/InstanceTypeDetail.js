@@ -8,6 +8,7 @@ import Table from "./Table";
 import {Link} from "react-router-dom";
 import InstanceTypeEnvVarTable from "./InstanceTypeEnvVarTable";
 import InstanceTypePortTable from "./InstanceTypePortTable";
+import InstanceTypeIngressRoutedServiceTable from "./InstanceTypeIngressRoutedServiceTable";
 
 export class InstanceTypeDetail extends Component {
     static propTypes = {
@@ -79,6 +80,12 @@ export class InstanceTypeDetail extends Component {
                         <h4>Ports</h4>
 
                         <InstanceTypePortTable instance_type_id={this.props.data.id}/>
+
+                        <h4>Ingress Routed Services</h4>
+
+                        <p>These services are made available to clients outside of the cluster via a global DNS name.</p>
+
+                        <InstanceTypeIngressRoutedServiceTable instance_type_id={this.props.data.id}/>
 
                         <div className="buttons">
                             <a className="button" onClick={this.handleDelete}>Delete Instance Type</a>

@@ -85,12 +85,13 @@ class InstanceTypeEnvVar(models.Model):
 class InstanceTypePort(models.Model):
     instance_type = models.ForeignKey(InstanceType, on_delete=models.CASCADE)
     internal = models.IntegerField()
-    external = models.IntegerField()
+    external = models.IntegerField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class InstanceTypeIngressRoutedService(models.Model):
     instance_type = models.ForeignKey(InstanceType, on_delete=models.CASCADE)
+    name = models.CharField(max_length=1000, null=False)
     service_name = models.CharField(max_length=100)
     svc_port = models.IntegerField()
     target_port = models.IntegerField()

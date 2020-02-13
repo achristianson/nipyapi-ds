@@ -19,7 +19,8 @@ from nifi_web.k8s.general import auth_gcloud_k8s, ensure_single_container_deploy
     destroy_statefulset, ensure_storage_class, ensure_secret, ensure_namespace, destroy_namespace, ensure_service, \
     destroy_service
 from nifi_web.k8s.traefik import ensure_traefik
-from nifi_web.models import K8sCluster, NifiInstance, Instance, InstanceType, InstanceTypeEnvVar, InstanceTypePort
+from nifi_web.models import K8sCluster, NifiInstance, Instance, InstanceType, InstanceTypeEnvVar, InstanceTypePort, \
+    InstanceTypeIngressRoutedService
 
 logger = logging.getLogger(__name__)
 
@@ -408,6 +409,14 @@ def destroy_nifi_instances(api_apps_v1, api_core_v1, api_custom):
                     namespace=instance.namespace,
                     name=inst_type.container_name
                 )
+
+                for svc in InstanceTypeIngressRoutedService.objects.filter(instance_type=inst_type):
+                    destroy_ingress_routed_svc(
+                        api_core_v1=api_core_v1,
+                        api_custom=api_custom,
+                        name=svc.service_name + '-' + instance.hostname,
+                        namespace=instance.namespace
+                    )
                 ci.delete()
 
             if instance.namespace != "default":
@@ -693,7 +702,7 @@ def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
                 inst_type: InstanceType = ci.instance_type
                 env_vars = [V1EnvVar(name=e.name, value=e.default_value) for e in
                             InstanceTypeEnvVar.objects.filter(instance_type=inst_type)]
-                ports = [V1ContainerPort(container_port=p.internal, host_port=p.external) for p in
+                ports = [V1ContainerPort(container_port=p.internal) for p in
                          InstanceTypePort.objects.filter(instance_type=inst_type)]
                 ensure_single_container_deployment(
                     api_apps_v1,
@@ -705,6 +714,19 @@ def create_nifi_instances(api_apps_v1, api_core_v1, api_custom, domain):
                     inst_type.container_name,
                     instance.namespace
                 )
+                for svc in InstanceTypeIngressRoutedService.objects.filter(instance_type=inst_type):
+                    ensure_ingress_routed_svc(
+                        api_core_v1=api_core_v1,
+                        api_custom=api_custom,
+                        domain=domain,
+                        hostname=svc.service_name + '-' + instance.hostname,
+                        name=svc.service_name + '-' + instance.hostname,
+                        target_name=inst_type.container_name,
+                        namespace=namespace,
+                        port_name=port_name,
+                        svc_port=svc.svc_port,
+                        target_port=svc.target_port
+                    )
 
             instance.state = 'RUNNING'
         finally:
