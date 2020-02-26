@@ -44,6 +44,16 @@ export class InstanceTypeDetail extends Component {
         this.setState({editing_container_name: false})
     };
 
+    handleEditImage = e => {
+        e.preventDefault();
+        this.setState({editing_image: true})
+    };
+
+    handleCancelEditImage = e => {
+        e.preventDefault();
+        this.setState({editing_image: false})
+    };
+
     handleSave = e => {
         e.preventDefault();
         const conf = {
@@ -157,11 +167,26 @@ export class InstanceTypeDetail extends Component {
                             </tr>
                             <tr>
                                 <td>Docker Image</td>
-                                <td>{this.state.instance_type.image}</td>
                                 <td>
-                                    <div className="buttons">
-                                        <a className="button" onClick={() => this.handleEditDockerImage()}>Edit</a>
-                                    </div>
+                                    {this.state.editing_image ? <input
+                                        className="input"
+                                        type="text"
+                                        name="image"
+                                        onChange={this.handleEditChange}
+                                        value={this.state.instance_type.image}
+                                        required
+                                    /> : this.state.instance_type.image}
+                                </td>
+                                <td>
+                                    {this.state.editing_image ?
+                                        <div className="buttons">
+                                            <a className="button" onClick={this.handleSave}>Save</a>
+                                            <a className="button"
+                                               onClick={this.handleCancelEditImage}>Cancel</a>
+                                        </div> :
+                                        <div className="buttons">
+                                            <a className="button" onClick={this.handleEditImage}>Edit</a>
+                                        </div>}
                                 </td>
                             </tr>
                             </tbody>
