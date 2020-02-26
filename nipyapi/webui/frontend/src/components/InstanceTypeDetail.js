@@ -15,7 +15,9 @@ export class InstanceTypeDetail extends Component {
     state = {
         instance_type: {},
         deleted: false,
-        editing_name: false
+        editing_name: false,
+        editing_container_name: false,
+        editing_image: false
     };
 
     componentDidMount() {
@@ -32,6 +34,16 @@ export class InstanceTypeDetail extends Component {
         this.setState({editing_name: false})
     };
 
+    handleEditContainerName = e => {
+        e.preventDefault();
+        this.setState({editing_container_name: true})
+    };
+
+    handleCancelEditContainerName = e => {
+        e.preventDefault();
+        this.setState({editing_container_name: false})
+    };
+
     handleSave = e => {
         e.preventDefault();
         const conf = {
@@ -42,7 +54,11 @@ export class InstanceTypeDetail extends Component {
         console.log('saving instance type');
         fetch("/api/instance-type/" + this.state.instance_type.id, conf).then(response => {
             console.log('saved instance type');
-            this.setState({editing_name: false})
+            this.setState({
+                editing_name: false,
+                editing_container_name: false,
+                editing_image: false
+            });
         });
 
     };
@@ -94,14 +110,16 @@ export class InstanceTypeDetail extends Component {
                             <tbody>
                             <tr>
                                 <td>Name</td>
-                                <td>{this.state.editing_name ? <input
-                                    className="input"
-                                    type="text"
-                                    name="name"
-                                    onChange={this.handleEditChange}
-                                    value={this.state.instance_type.name}
-                                    required
-                                /> : this.state.instance_type.name}</td>
+                                <td>
+                                    {this.state.editing_name ? <input
+                                        className="input"
+                                        type="text"
+                                        name="name"
+                                        onChange={this.handleEditChange}
+                                        value={this.state.instance_type.name}
+                                        required
+                                    /> : this.state.instance_type.name}
+                                </td>
                                 <td>
                                     {this.state.editing_name ?
                                         <div className="buttons">
@@ -115,11 +133,26 @@ export class InstanceTypeDetail extends Component {
                             </tr>
                             <tr>
                                 <td>Container Name</td>
-                                <td>{this.state.instance_type.container_name}</td>
                                 <td>
-                                    <div className="buttons">
-                                        <a className="button" onClick={() => this.handleEditContainerName()}>Edit</a>
-                                    </div>
+                                    {this.state.editing_container_name ? <input
+                                        className="input"
+                                        type="text"
+                                        name="container_name"
+                                        onChange={this.handleEditChange}
+                                        value={this.state.instance_type.container_name}
+                                        required
+                                    /> : this.state.instance_type.container_name}
+                                </td>
+                                <td>
+                                    {this.state.editing_container_name ?
+                                        <div className="buttons">
+                                            <a className="button" onClick={this.handleSave}>Save</a>
+                                            <a className="button"
+                                               onClick={this.handleCancelEditContainerName}>Cancel</a>
+                                        </div> :
+                                        <div className="buttons">
+                                            <a className="button" onClick={this.handleEditContainerName}>Edit</a>
+                                        </div>}
                                 </td>
                             </tr>
                             <tr>
