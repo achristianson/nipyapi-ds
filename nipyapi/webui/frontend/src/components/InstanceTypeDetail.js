@@ -1,11 +1,8 @@
 import React, {Component} from "react";
 import PropTypes from "prop-types";
 import {Redirect} from "react-router";
-import {Breadcrumb, CurrentCrumb, DockerAuthConfigsCrumb, InstanceTypesCrumb, NifiImagesCrumb} from "./Breadcrumb";
+import {Breadcrumb, CurrentCrumb, InstanceTypesCrumb} from "./Breadcrumb";
 import {perform_cloud_ops} from "../util/bg_tasks";
-import DataProvider from "./DataProvider";
-import Table from "./Table";
-import {Link} from "react-router-dom";
 import InstanceTypeEnvVarTable from "./InstanceTypeEnvVarTable";
 import InstanceTypePortTable from "./InstanceTypePortTable";
 import InstanceTypeIngressRoutedServiceTable from "./InstanceTypeIngressRoutedServiceTable";
@@ -16,21 +13,58 @@ export class InstanceTypeDetail extends Component {
     };
 
     state = {
-        deleted: false
+        instance_type: {},
+        deleted: false,
+        editing_name: false
+    };
+
+    componentDidMount() {
+        this.setState({instance_type: this.props.data})
+    }
+
+    handleEditName = e => {
+        e.preventDefault();
+        this.setState({editing_name: true})
+    };
+
+    handleCancelEditName = e => {
+        e.preventDefault();
+        this.setState({editing_name: false})
+    };
+
+    handleSave = e => {
+        e.preventDefault();
+        const conf = {
+            method: "PUT",
+            body: JSON.stringify(this.state.instance_type),
+            headers: new Headers({"Content-Type": "application/json"})
+        };
+        console.log('saving instance type');
+        fetch("/api/instance-type/" + this.state.instance_type.id, conf).then(response => {
+            console.log('saved instance type');
+            this.setState({editing_name: false})
+        });
+
+    };
+
+    handleEditChange = e => {
+        let new_state = this.state;
+        new_state.instance_type[e.target.name] = e.target.value;
+        this.setState(new_state);
     };
 
     handleDelete = () => {
-        console.log("Requesting deletion of instance type: " + this.props.data.id);
-        fetch("/api/instance-type/" + this.props.data.id + "", {
+        console.log("Requesting deletion of instance type: " + this.state.instance_type.id);
+        fetch("/api/instance-type/" + this.state.instance_type.id + "", {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json"
             }
         }).then(response => {
             if (response.status !== 204) {
-                console.log("Failed to request deletion of instance type: " + this.props.data.id)
+                console.log("Failed to request deletion of instance type: " + this.state.instance_type.id)
             } else {
-                console.log("Requested deletion of instance type: " + this.props.data.id);
+                console.log("Requested deletion of instance type: " + this.state.instance_type.id);
                 perform_cloud_ops();
             }
         });
@@ -50,25 +84,52 @@ export class InstanceTypeDetail extends Component {
             <React.Fragment>
                 <Breadcrumb>
                     <InstanceTypesCrumb/>
-                    <CurrentCrumb>{this.props.data.name}</CurrentCrumb>
+                    <CurrentCrumb>{this.state.instance_type.name}</CurrentCrumb>
                 </Breadcrumb>
                 <section className="">
                     <div className="content">
-                        <h3>{this.props.data.name}</h3>
+                        <h3>{this.state.instance_type.name}</h3>
 
                         <table className="table is-fullwidth">
                             <tbody>
                             <tr>
                                 <td>Name</td>
-                                <td>{this.props.data.name}</td>
+                                <td>{this.state.editing_name ? <input
+                                    className="input"
+                                    type="text"
+                                    name="name"
+                                    onChange={this.handleEditChange}
+                                    value={this.state.instance_type.name}
+                                    required
+                                /> : this.state.instance_type.name}</td>
+                                <td>
+                                    {this.state.editing_name ?
+                                        <div className="buttons">
+                                            <a className="button" onClick={this.handleSave}>Save</a>
+                                            <a className="button" onClick={this.handleCancelEditName}>Cancel</a>
+                                        </div> :
+                                        <div className="buttons">
+                                            <a className="button" onClick={this.handleEditName}>Edit</a>
+                                        </div>}
+                                </td>
                             </tr>
                             <tr>
                                 <td>Container Name</td>
-                                <td>{this.props.data.container_name}</td>
+                                <td>{this.state.instance_type.container_name}</td>
+                                <td>
+                                    <div className="buttons">
+                                        <a className="button" onClick={() => this.handleEditContainerName()}>Edit</a>
+                                    </div>
+                                </td>
                             </tr>
                             <tr>
                                 <td>Docker Image</td>
-                                <td>{this.props.data.image}</td>
+                                <td>{this.state.instance_type.image}</td>
+                                <td>
+                                    <div className="buttons">
+                                        <a className="button" onClick={() => this.handleEditDockerImage()}>Edit</a>
+                                    </div>
+                                </td>
                             </tr>
                             </tbody>
                         </table>
@@ -83,7 +144,8 @@ export class InstanceTypeDetail extends Component {
 
                         <h4>Ingress Routed Services</h4>
 
-                        <p>These services are made available to clients outside of the cluster via a global DNS name.</p>
+                        <p>These services are made available to clients outside of the cluster via a global DNS
+                            name.</p>
 
                         <InstanceTypeIngressRoutedServiceTable instance_type_id={this.props.data.id}/>
 
