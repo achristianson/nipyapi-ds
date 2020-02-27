@@ -6,9 +6,10 @@ import {ClusterMini} from "./ClusterMini";
 import {perform_cloud_ops} from "../util/bg_tasks";
 
 
-class InstanceSvcRow extends Component {
+class InstanceSvcURIRow extends Component {
     static propTypes = {
         service: PropTypes.object.isRequired,
+        uri: PropTypes.object.isRequired,
         nifi_instance: PropTypes.object.isRequired
     };
 
@@ -16,21 +17,57 @@ class InstanceSvcRow extends Component {
 
     render() {
         return <tr>
-            <td>{this.props.service.name}</td>
+            <td>{this.props.service.name}/{this.props.uri.name}</td>
             <td>
                 <a
                     target="_blank"
-                    href={"https://" + this.props.service.service_name + "-" + this.props.nifi_instance.hostname + "." + window.nifi_web_config.domain + "/"}>
-                    {"https://" + this.props.service.service_name + "-" + this.props.nifi_instance.hostname + "." + window.nifi_web_config.domain}
+                    href={"https://" + this.props.service.service_name + "-" + this.props.nifi_instance.hostname + "." + window.nifi_web_config.domain + this.props.uri.path}>
+                    {"https://" + this.props.service.service_name + "-" + this.props.nifi_instance.hostname + "." + window.nifi_web_config.domain + this.props.uri.path}
                 </a></td>
         </tr>;
     }
 }
 
 
+class InstanceSvcRow extends Component {
+    static propTypes = {
+        service: PropTypes.object.isRequired,
+        nifi_instance: PropTypes.object.isRequired
+    };
+
+    state = {
+        uris_loaded: false,
+        uris: []
+    };
+
+    refreshData() {
+        fetch("/api/instance-type-ingress-svc-uri?instance_type_svc=" + this.props.service.id)
+            .then(response => {
+                if (response.status !== 200) {
+                    return this.setState({placeholder: "Something went wrong"});
+                }
+                return response.json();
+            })
+            .then(data => this.setState({uris: data, uris_loaded: true}));
+    }
+
+    componentDidMount() {
+        this.refreshData();
+    }
+
+    render() {
+        return this.state.uris_loaded ? this.state.uris.map(uri => <InstanceSvcURIRow key={uri.id} uri={uri} service={this.props.service} nifi_instance={this.props.nifi_instance}/>) :
+            <tr>
+                <td>{this.props.service.name}</td>
+                <td>Loading URIs...</td>
+            </tr>;
+    }
+}
+
+
 class InstanceRow extends Component {
     static propTypes = {
-        instance: PropTypes.number.isRequired,
+        instance: PropTypes.object.isRequired,
         nifi_instance: PropTypes.object.isRequired
     };
 
@@ -58,7 +95,7 @@ class InstanceRow extends Component {
         return this.state.services_loaded ? this.state.services.map(service => <InstanceSvcRow key={service.id} service={service} nifi_instance={this.props.nifi_instance}/>) :
             <tr>
                 <td/>
-                <td>Loading...</td>
+                <td>Loading services...</td>
             </tr>;
     }
 }
