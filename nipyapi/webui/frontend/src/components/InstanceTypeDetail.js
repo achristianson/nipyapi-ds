@@ -200,10 +200,11 @@ export class InstanceTypeDetail extends Component {
 
                         <InstanceTypePortTable instance_type_id={this.props.data.id}/>
 
-                        <h4>Ingress Routed Services</h4>
+                        <h4>Ingress Routed HTTP Services</h4>
 
                         <p>These services are made available to clients outside of the cluster via a global DNS
-                            name.</p>
+                            name. The services internally are HTTP; An authenticated HTTPS reverse proxy to this port
+                            will be created automatically on port 443 on the given hostname.</p>
 
                         <InstanceTypeIngressRoutedServiceTable instance_type_id={this.props.data.id}/>
 

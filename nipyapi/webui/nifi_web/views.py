@@ -4,11 +4,12 @@ from django.db.models import Q
 from django.http import JsonResponse
 from nifi_web.bg_tasks import perform_cloud_ops
 from nifi_web.models import NifiInstance, K8sCluster, NifiImage, NifiImageBuild, DockerRegistryAuth, InstanceType, \
-    InstanceTypeEnvVar, InstanceTypePort, ImageMirror, ImageMirrorJob, Instance, InstanceTypeIngressRoutedService
+    InstanceTypeEnvVar, InstanceTypePort, ImageMirror, ImageMirrorJob, Instance, InstanceTypeIngressRoutedService, \
+    InstanceTypeIngressRoutedServiceURI
 from nifi_web.serializers import NifiInstanceSerializer, K8sClusterSerializer, NifiInstanceDeepSerializer, \
     NifiImageSerializer, NifiImageBuildSerializer, DockerRegistryAuthSerializer, InstanceTypeSerializer, \
     InstanceTypeEnvVarSerializer, InstanceTypePortSerializer, ImageMirrorSerializer, ImageMirrorJobSerializer, \
-    InstanceSerializer, InstanceTypeIngressRoutedServiceSerializer
+    InstanceSerializer, InstanceTypeIngressRoutedServiceSerializer, InstanceTypeIngressRoutedServiceURISerializer
 from rest_framework import generics
 
 
@@ -192,6 +193,28 @@ class InstanceTypeIngressRoutedServiceDetail(generics.RetrieveUpdateDestroyAPIVi
     serializer_class = InstanceTypeIngressRoutedServiceSerializer
     lookup_url_kwarg = 'obj_id'
     queryset = InstanceTypeIngressRoutedService.objects.all()
+
+
+class InstanceTypeIngressRoutedServiceURIList(generics.ListAPIView):
+    serializer_class = InstanceTypeIngressRoutedServiceURISerializer
+
+    def get_queryset(self):
+        queryset = InstanceTypeIngressRoutedServiceURI.objects.all()
+        instance_type_svc_id = self.request.query_params.get('instance_type_svc', None)
+        if instance_type_svc_id is not None:
+            queryset = queryset.filter(instance_type_svc=instance_type_svc_id)
+        return queryset
+
+
+class InstanceTypeIngressRoutedServiceURICreate(generics.CreateAPIView):
+    queryset = InstanceTypeIngressRoutedServiceURI.objects.all()
+    serializer_class = InstanceTypeIngressRoutedServiceURISerializer
+
+
+class InstanceTypeIngressRoutedServiceURIDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = InstanceTypeIngressRoutedServiceURISerializer
+    lookup_url_kwarg = 'obj_id'
+    queryset = InstanceTypeIngressRoutedServiceURI.objects.all()
 
 
 class NifiImageBuildList(generics.ListAPIView):

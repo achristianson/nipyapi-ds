@@ -96,3 +96,10 @@ class InstanceTypeIngressRoutedService(models.Model):
     svc_port = models.IntegerField()
     target_port = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class InstanceTypeIngressRoutedServiceURI(models.Model):
+    instance_type_svc = models.ForeignKey(InstanceTypeIngressRoutedService, on_delete=models.CASCADE)
+    name = models.CharField(max_length=1000, null=False)
+    path = models.CharField(max_length=1000, null=False)
+    created_at = models.DateTimeField(auto_now_add=True)
